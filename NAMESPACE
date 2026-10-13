@@ -31,6 +31,7 @@ export(tabulate_micro_data)
 export(write_hrc)
 export(write_hrc2)
 import(data.table, except = transpose)
+import(tauargusengine)
 import(utils)
 importFrom(dplyr,
   "%>%",

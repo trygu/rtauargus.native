@@ -18,7 +18,6 @@ op.rtauargus <- list(
   rtauargus.output_options     = "",
   # run_arb ----------------------------------------------------- #
   rtauargus.missing_dir        = "stop",
-  rtauargus.tauargus_exe       = "Y:/Logiciels/TauArgus/TauArgus.exe",
   rtauargus.show_batch_console = FALSE,
   rtauargus.import             = FALSE,
   rtauargus.is_tabular         = TRUE
@@ -150,7 +149,6 @@ df_op.rtauargus <- function(html = FALSE) {
 #'  rtauargus.output_options         \tab "\Sexpr{rtauargus:::op.rtauargus$rtauargus.output_options}"    \tab                     \cr
 #'  `------------------------`  \tab  `---------------------------------`                      \tab `-------------`\cr
 #'  rtauargus.missing_dir            \tab "\Sexpr{rtauargus:::op.rtauargus$rtauargus.missing_dir}"       \tab `run_arb()`      \cr
-#'  rtauargus.tauargus_exe           \tab "\Sexpr{rtauargus:::op.rtauargus$rtauargus.tauargus_exe}"      \tab                     \cr
 #'  rtauargus.show_batch_console     \tab  \Sexpr{rtauargus:::op.rtauargus$rtauargus.show_batch_console} \tab                     \cr
 #'  rtauargus.import                 \tab  \Sexpr{rtauargus:::op.rtauargus$rtauargus.import}             \tab
 #' }
@@ -160,14 +158,13 @@ df_op.rtauargus <- function(html = FALSE) {
 #'
 #' # modifies some options
 #' options(
-#'   rtauargus.tauargus_exe = "Z:/tmp/TauArgus.exe",
 #'   rtauargus.output_type = "4",
 #'   rtauargus.weighted = TRUE
 #' )
 #' str(rtauargus_options())
 #'
 #' # resets some options (prefix "rtauargus." facultatif)
-#' reset_rtauargus_options("output_type", "rtauargus.tauargus_exe")
+#' reset_rtauargus_options("output_type", "weighted")
 #' str(rtauargus_options())
 #'
 #' # resets everything

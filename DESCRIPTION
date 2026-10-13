@@ -15,7 +15,8 @@ Imports:
     zoo,
     sdcHierarchies,
     igraph,
-    lifecycle
+    lifecycle,
+    tauargusengine
 Suggests:
     testthat,
     knitr,
