@@ -25,3 +25,15 @@ vignettes/tauargus_files/
 vignettes/hrc/
 vignettes/example_1/
 bench/
+
+# native engine scratch files (written to the working directory by
+# HiTaS / CRP / the rounder when running .arb batches)
+CSPlogfile.txt
+FullJJ.log
+HiTaS.log
+JJUit.dat
+cspSCIP.bra
+cspSCIP.heu
+cspSCIP.sta
+hierinfo.dat
+tests/testthat/_problems/
