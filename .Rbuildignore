@@ -23,3 +23,4 @@ tauargus_files/*
 ^tauargus-engine$
 ^\.gitmodules$
 ^build$
+^\.rlib$

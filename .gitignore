@@ -37,3 +37,7 @@ cspSCIP.heu
 cspSCIP.sta
 hierinfo.dat
 tests/testthat/_problems/
+
+# CI-style local build output
+build/
+.rlib/

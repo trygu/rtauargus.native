@@ -7,20 +7,25 @@
 # script (stage-r-package.sh) and the binding build definitions live in
 # the submodule and are not duplicated here.
 #
-# Each build job:
+# Each build job (linux, macos, windows):
 #   1. checks out this repo with the tauargus-engine submodule (recursive),
-#   2. stages the self-contained tauargusengine source package via the
+#   2. installs the CRAN dependencies of the front-end,
+#   3. stages the self-contained tauargusengine source package via the
 #      submodule's stage-r-package.sh (clones the pinned HiGHS itself),
-#   3. builds the source tarballs of both packages (on linux),
-#   4. installs both from the source tarballs into a fresh library,
-#   5. runs the full rtauargus.native test suite against the installed
-#      packages (includes the native engine e2e tests),
-#   6. repackages the installed tauargusengine as a platform binary.
+#   4. builds the tauargusengine source tarball and installs it (the
+#      front-end build below resolves its Imports while processing the
+#      help pages),
+#   5. builds the rtauargus.native source tarball,
+#   6. installs both packages from the tarballs into a fresh library,
+#      runs the full rtauargus.native test suite (includes the native
+#      engine e2e tests), and repackages the installed binding as a
+#      platform binary.
 #
-# The clean-room job (on tags/dispatch) installs both packages from the
-# release-format artifacts in a container without a checkout and verifies
-# the two-package install procedure. The publish job (on r-v* tags) cuts
-# the GitHub Release.
+# The clean-room job (on tags/dispatch) installs the platform binary in a
+# container without a checkout and no compiler, and verifies the
+# front-end source tarball statically. The publish job (on r-v* tags)
+# cuts the GitHub Release with both source tarballs and the three
+# platform binaries.
 
 name: release
 
@@ -58,12 +63,24 @@ jobs:
         with:
           r-version: ${{ env.R_VERSION }}
 
-      # Package dependencies (needed to build the vignettes and to run
-      # the test suite).
+      - name: Install system dependencies (linux)
+        if: matrix.osname == 'linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            libxml2-dev libcurl4-openssl-dev libssl-dev
+
+      # CRAN dependencies of the front-end (needed to build its tarball
+      # and to run the test suite). tauargusengine is not on CRAN; it is
+      # installed from the staged source package below.
       - name: Install package dependencies
-        uses: r-lib/actions/setup-r-dependencies@v2
-        with:
-          extra-packages: any[testthat, knitr, rmarkdown, visNetwork]
+        shell: bash
+        run: |
+          Rscript -e 'install.packages(
+            c("purrr", "dplyr", "tidyr", "data.table", "gdata", "stringr",
+              "rlang", "zoo", "sdcHierarchies", "igraph", "lifecycle",
+              "testthat", "knitr", "rmarkdown", "visNetwork"),
+            repos = "https://cloud.r-project.org")'
 
       # Stage the distributable tauargusengine source package from the
       # submodule. On a release tag the version comes from the tag
@@ -78,27 +95,37 @@ jobs:
             tauargus-engine/scripts/stage-r-package.sh
           fi
 
-      # Source packages are platform-neutral; build them once (on linux).
-      # The tauargusengine build consumes nothing (the install below uses
-      # the tarball), and the rtauargus.native build must exclude the
-      # engine submodule (see .Rbuildignore).
-      - name: Build the source packages
-        if: matrix.osname == 'linux'
+      # Building the front-end tarball (next step) installs the package
+      # to process the help pages, so all its Imports must be available:
+      # build the binding tarball and install it first.
+      - name: Build and install the tauargusengine binding
         shell: bash
         run: |
           set -euo pipefail
           mkdir -p build/dist
-          (cd build/dist && R CMD build "$GITHUB_WORKSPACE/tauargus-engine/build/r-package/tauargusengine")
-          (cd build/dist && R CMD build "$GITHUB_WORKSPACE")
+          (cd build/dist && R CMD build \
+            "$GITHUB_WORKSPACE/tauargus-engine/build/r-package/tauargusengine")
+          R CMD INSTALL build/dist/tauargusengine_*.tar.gz
 
-      # Install both packages from the source tarballs: configure builds
-      # HiGHS and the engine from the package's own bundled sources. The
-      # clean-room job later verifies the release-format artifacts.
-      - name: Install both packages and run the test suite
+      # Build the front-end source tarball. The engine submodule, the
+      # gitmodules file and the build output are excluded (see
+      # .Rbuildignore).
+      - name: Build the rtauargus.native source package
         shell: bash
         run: |
           set -euo pipefail
-          RLIB="$(mktemp -d)/Rlib"
+          (cd build/dist && R CMD build "$GITHUB_WORKSPACE")
+
+      # The documented install procedure: both packages from their
+      # tarballs into a fresh library. The binding's configure builds
+      # HiGHS and the engine from the package's own bundled sources. The
+      # installed binding is repackaged as the platform binary.
+      - name: Install, test, package the binary
+        shell: bash
+        run: |
+          set -euo pipefail
+          RLIB="$GITHUB_WORKSPACE/.rlib"
+          rm -rf "$RLIB"
           mkdir -p "$RLIB"
           R CMD INSTALL --library="$RLIB" build/dist/tauargusengine_*.tar.gz
           R CMD INSTALL --library="$RLIB" build/dist/rtauargus.native_*.tar.gz
@@ -111,16 +138,7 @@ jobs:
                 meta[["highs_version"]], "\n")'
           cd tests
           R_LIBS="$RLIB" Rscript testthat.R
-
-      # The binary package is the installed package directory, repackaged:
-      # no compiler is needed to install it.
-      - name: Package the tauargusengine binary
-        shell: bash
-        run: |
-          set -euo pipefail
-          RLIB="$(mktemp -d)/Rlib"
-          mkdir -p "$RLIB"
-          R CMD INSTALL --library="$RLIB" build/dist/tauargusengine_*.tar.gz
+          cd "$GITHUB_WORKSPACE"
           mkdir -p build/bin
           VER="$(tar -xzOf build/dist/tauargusengine_*.tar.gz \
             tauargusengine/DESCRIPTION | awk -F': ' '/^Version:/{print $2; exit}')"
@@ -131,8 +149,8 @@ jobs:
             # package directory (bsdtar picks the format from -a).
             tar -a -c -f "build/bin/${NAME}.zip" -C "$RLIB" tauargusengine
           else
-            # Standard R Linux/macOS binary format: gzipped tarball of the
-            # installed package directory.
+            # Standard R Linux/macOS binary format: gzipped tarball of
+            # the installed package directory.
             tar -czf "build/bin/${NAME}.tar.gz" -C "$RLIB" tauargusengine
           fi
 
@@ -179,29 +197,25 @@ jobs:
         with:
           r-version: ${{ env.R_VERSION }}
 
-      # The documented two-package install procedure, from release-format
-      # files only: the platform binary for the binding and the source
-      # tarball for the front-end.
-      - name: Install both packages and run the two-package smoke
+      - name: Install the binary and run the smoke test
         shell: bash
         run: |
           set -euo pipefail
           RLIB="$(mktemp -d)/Rlib"
           mkdir -p "$RLIB"
           R CMD INSTALL --library="$RLIB" pkg/tauargusengine_*.tar.gz
-          R CMD INSTALL --library="$RLIB" src/rtauargus.native_*.tar.gz
+          # tests/ is not part of an installed package, so the smoke
+          # runs inline from the installed library only.
           R_LIBS="$RLIB" Rscript -e '
             library(tauargusengine)
             engine <- new_tauargus()
             version <- tauargus_version(engine)
             stopifnot(nchar(version) > 0L)
+            stopifnot(!is.null(new_hitas()), !is.null(new_rounder()))
             meta <- tauargus_engine_meta()
             stopifnot(!is.na(meta[["engine_sha"]]),
                       nchar(meta[["highs_version"]]) > 0L)
-            library(rtauargus.native)
-            opts <- rtauargus_options()
-            stopifnot(length(opts) > 0L)
-            cat("clean-room two-package smoke ok:", version, "\n")'
+            cat("clean-room smoke ok:", version, "\n")'
 
           # No build paths may be referenced by the loaded objects.
           # libR.so is provided by the R runtime, not the system, so
@@ -212,7 +226,28 @@ jobs:
             echo "clean-room: missing shared object" >&2
             exit 1
           fi
-          echo "clean-room: ok"
+          echo "clean-room: binding ok"
+
+      # The two-package install from the release files is exercised on
+      # all three build jobs (both tarballs into a fresh library, full
+      # suite); here the front-end tarball is verified statically, since
+      # installing it would need its CRAN dependencies in this container.
+      - name: Verify the front-end source tarball
+        shell: bash
+        run: |
+          set -euo pipefail
+          TMP="$(mktemp -d)"
+          tar -xzf src/rtauargus.native_*.tar.gz -C "$TMP"
+          PKG="$TMP/rtauargus.native"
+          test -f "$PKG/DESCRIPTION"
+          test -f "$PKG/NAMESPACE"
+          grep -q "^Package: rtauargus.native$" "$PKG/DESCRIPTION"
+          grep -q "import(tauargusengine)" "$PKG/NAMESPACE"
+          if tar -tzf src/rtauargus.native_*.tar.gz | grep -qE "tauargus-engine/|\.gitmodules"; then
+            echo "clean-room: engine content leaked into the front-end tarball" >&2
+            exit 1
+          fi
+          echo "clean-room: front-end tarball ok"
 
   publish:
     name: publish (GitHub Release)
