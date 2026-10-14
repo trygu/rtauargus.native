@@ -137,7 +137,7 @@ from_4_to_3_case_0_hr <- function(
   tab2_corresp <- res2[[2]]
 
   # Write HRC hierarchy files for both options
-  hrc_tab1 <- rtauargus::write_hrc2(tab1_corresp,
+  hrc_tab1 <- rtauargus.native::write_hrc2(tab1_corresp,
                                     file_name = paste(dir_name,"/",
                                                       paste("hrc",dfs_name,
                                                             v1,sep = "_"),
@@ -146,7 +146,7 @@ from_4_to_3_case_0_hr <- function(
                                     adjust_unique_roots = TRUE
   )
 
-  hrc_tab2 <- rtauargus::write_hrc2(tab2_corresp,
+  hrc_tab2 <- rtauargus.native::write_hrc2(tab2_corresp,
                                     file_name = paste(dir_name,"/",
                                                       paste("hrc",dfs_name,
                                                             v2,sep = "_"),

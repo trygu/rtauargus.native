@@ -67,7 +67,7 @@ reference:
     contents:
     - rtauargus_options
     - write_hrc
-    - rtauargus-package
+    - rtauargus.native-package
     - contains_non_total
     - create_edges
     - dataframe_result

@@ -16,7 +16,7 @@ vignette: >
 
 
 ``` r
-library(rtauargus)
+library(rtauargus.native)
 library(dplyr)
 ```
 
@@ -122,7 +122,7 @@ str(metadata_pizza_lettuce)
 Example code:
 
 ``` r
-library(rtauargus)
+library(rtauargus.native)
 
 data(metadata_pizza_lettuce)
 
@@ -309,7 +309,7 @@ liens_eq <- data.frame(eq_name = c("eq1"),
 Example code :
 
 ``` r
-library(rtauargus)
+library(rtauargus.native)
 
 data(metadata_pizza_lettuce)
 
@@ -360,7 +360,7 @@ The create_edges step in the metadata analysis identifies tables included within
 
 
 ``` r
-library(rtauargus)
+library(rtauargus.native)
 library(igraph)
 library(visNetwork)
 

@@ -17,7 +17,7 @@ run_arb <- function(lines) {
   arb <- tempfile(fileext = ".arb")
   on.exit(unlink(arb), add = TRUE)
   writeLines(lines, arb)
-  suppressMessages(rtauargus:::run_engine_batch(arb))
+  suppressMessages(rtauargus.native:::run_engine_batch(arb))
 }
 
 # 1-based linear cell index for the (row-code, col-code) position; the
@@ -25,8 +25,8 @@ run_arb <- function(lines) {
 cell_at <- function(eng, tab, row_code, col_code) {
   spec <- eng$tables[[tab + 1L]]$spec
   meta <- eng$metadata
-  vi1 <- rtauargus:::meta_index_of(meta, spec$exp_vars[1L]) + 1L
-  vi2 <- rtauargus:::meta_index_of(meta, spec$exp_vars[2L]) + 1L
+  vi1 <- rtauargus.native:::meta_index_of(meta, spec$exp_vars[1L]) + 1L
+  vi2 <- rtauargus.native:::meta_index_of(meta, spec$exp_vars[2L]) + 1L
   code_pos <- function(vi, code) {
     n <- as.integer(tauargusengine::tauargus_get_var_number_of_codes(eng$tau, vi - 1L)[2L])
     for (i in seq_len(n)) {
@@ -88,21 +88,21 @@ test_that("microdata batch computes both tables", {
 
   # missing-code cells are empty
   expect_equal(val_at(eng_micro, 0L, "  9", ""), 0)
-  expect_equal(st_at(eng_micro, 0L, "  9", ""), rtauargus:::CS_EMPTY)
-  expect_equal(st_at(eng_micro, 0L, "", " X"), rtauargus:::CS_EMPTY)
+  expect_equal(st_at(eng_micro, 0L, "  9", ""), rtauargus.native:::CS_EMPTY)
+  expect_equal(st_at(eng_micro, 0L, "", " X"), rtauargus.native:::CS_EMPTY)
 })
 
 test_that("NK(2,50) flags dominance of the two largest records", {
   # grand total: top2 = 10000 / 40000 = 25 % -> safe
-  expect_equal(st_at(eng_micro, 0L, "", ""), rtauargus:::CS_SAFE)
+  expect_equal(st_at(eng_micro, 0L, "", ""), rtauargus.native:::CS_SAFE)
   # column A total: top2 = 10000 / 21000 = 47.6 % <= 50 -> safe
-  expect_equal(st_at(eng_micro, 0L, "", " A"), rtauargus:::CS_SAFE)
+  expect_equal(st_at(eng_micro, 0L, "", " A"), rtauargus.native:::CS_SAFE)
   # column B total: top2 = 10000 / 19000 = 52.6 % > 50 -> unsafe
-  expect_equal(st_at(eng_micro, 0L, "", " B"), rtauargus:::CS_UNSAFE_RULE)
+  expect_equal(st_at(eng_micro, 0L, "", " B"), rtauargus.native:::CS_UNSAFE_RULE)
   # every single/double-record leaf cell is 100 % dominated -> unsafe
-  expect_equal(st_at(eng_micro, 0L, "  1", " A"), rtauargus:::CS_UNSAFE_RULE)
-  expect_equal(st_at(eng_micro, 0L, "  1", " B"), rtauargus:::CS_UNSAFE_RULE)
-  expect_equal(st_at(eng_micro, 0L, "  3", " B"), rtauargus:::CS_UNSAFE_RULE)
+  expect_equal(st_at(eng_micro, 0L, "  1", " A"), rtauargus.native:::CS_UNSAFE_RULE)
+  expect_equal(st_at(eng_micro, 0L, "  1", " B"), rtauargus.native:::CS_UNSAFE_RULE)
+  expect_equal(st_at(eng_micro, 0L, "  3", " B"), rtauargus.native:::CS_UNSAFE_RULE)
 })
 
 test_that("WRITETABLE CSV before RND writes raw values, not the (zero) rounded response", {
@@ -140,8 +140,8 @@ test_that("hierarchical variable produces level and leaf codes", {
   expect_equal(val_at(eng_micro, 1L, " B", "21"), 10000)
   # structurally empty cells
   expect_equal(val_at(eng_micro, 1L, " A", "12"), 0)
-  expect_equal(st_at(eng_micro, 1L, " A", "12"), rtauargus:::CS_EMPTY)
-  expect_equal(st_at(eng_micro, 1L, " B", "11"), rtauargus:::CS_EMPTY)
+  expect_equal(st_at(eng_micro, 1L, " A", "12"), rtauargus.native:::CS_EMPTY)
+  expect_equal(st_at(eng_micro, 1L, " B", "11"), rtauargus.native:::CS_EMPTY)
   # row/column totals
   expect_equal(val_at(eng_micro, 1L, " A", ""), 21000)
   expect_equal(val_at(eng_micro, 1L, " B", ""), 19000)
@@ -170,7 +170,7 @@ test_that("truncation recode keeps only the requested level", {
   expect_equal(
     as.integer(tauargusengine::tauargus_get_var_number_of_codes(
       eng$tau,
-      rtauargus:::meta_index_of(eng$metadata, "Ind")
+      rtauargus.native:::meta_index_of(eng$metadata, "Ind")
     )[2L]), 4)
   expect_equal(val_at(eng, 1L, "", "1"), 28000)
   expect_equal(val_at(eng, 1L, "", "2"), 12000)

@@ -1,4 +1,4 @@
-Package: rtauargus
+Package: rtauargus.native
 Type: Package
 Title: Using Tau-Argus from R
 Language: fr

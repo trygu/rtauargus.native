@@ -26,7 +26,7 @@ journal_add_line <- function(journal,...){
 #' @seealso `tab_rtauargus2`
 #'
 #' @examples
-#' library(rtauargus)
+#' library(rtauargus.native)
 #' library(dplyr)
 #' data(turnover_act_size)
 #' data(turnover_act_cj)

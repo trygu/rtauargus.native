@@ -16,7 +16,7 @@ vignette: >
 
 
 ``` r
-library(rtauargus)
+library(rtauargus.native)
 library(dplyr)
 ```
 
@@ -121,7 +121,7 @@ str(metadata_pizza_lettuce)
 Exemple de code :
 
 ``` r
-library(rtauargus)
+library(rtauargus.native)
 
 data(metadata_pizza_lettuce)
 
@@ -307,7 +307,7 @@ liens_eq <- data.frame(eq_name = c("eq1"),
 Exemple de code :
 
 ``` r
-library(rtauargus)
+library(rtauargus.native)
 
 data(metadata_pizza_lettuce)
 
@@ -357,7 +357,7 @@ L'étape `create_edges` de l'analyse des métadonnées identifie les tableaux in
 
 
 ``` r
-library(rtauargus)
+library(rtauargus.native)
 library(igraph)
 library(visNetwork)
 

@@ -15,7 +15,7 @@ run_arb <- function(lines) {
   arb <- tempfile(fileext = ".arb")
   on.exit(unlink(arb), add = TRUE)
   writeLines(lines, arb)
-  rtauargus:::run_engine_batch(arb)
+  rtauargus.native:::run_engine_batch(arb)
 }
 
 # 1-based linear cell index; Table 1 code order:
@@ -63,7 +63,7 @@ test_that("MOD suppression sets secondary cells and the audit reflects it", {
   # the secondary cell status is set in the table itself
   expect_equal(
     tauargusengine::tauargus_get_table_cell_status(eng$tau, 0L, lin(1L, 2L) - 1L),
-    rtauargus:::CS_SECONDARY_UNSAFE)
+    rtauargus.native:::CS_SECONDARY_UNSAFE)
   # the grand total value is preserved by the modification
   expect_equal(tauargusengine::tauargus_get_table_cell_value(eng$tau, 0L, 0L), 40000)
 })
@@ -87,7 +87,7 @@ test_that("OPT suppression sets secondary cells and audits", {
     '"Total";" A";21000.00;6;21000.00;1.95;5000.00;5000.00;M;0.01;0.01;-0.00;40000.00;40000.00;100.00;90.48;190.48')
   expect_equal(
     tauargusengine::tauargus_get_table_cell_status(eng$tau, 0L, lin(1L, 2L) - 1L),
-    rtauargus:::CS_SECONDARY_UNSAFE)
+    rtauargus.native:::CS_SECONDARY_UNSAFE)
 })
 
 test_that("RND rounds to multiples of the base and preserves additivity", {

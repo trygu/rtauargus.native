@@ -19,7 +19,7 @@ test_that("parse_batch parses a full microdata batch into typed commands", {
     "<RECODE> 1, A, \"a.grc\"",
     "<GOINTERACTIVE>"
   ))
-  cmds <- rtauargus:::parse_batch(p)
+  cmds <- rtauargus.native:::parse_batch(p)
 
   # 7 lines, but NK(2,50)|NK(0,0) yields two SafetyRule commands
   expect_length(cmds, 8)
@@ -55,7 +55,7 @@ test_that("Suppress commands keep their kind field (rta_cmd regression)", {
     "<SUPPRESS> OPT(1)",
     "<SUPPRESS> RND(1, 10000)"
   ))
-  cmds <- rtauargus:::parse_batch(p)
+  cmds <- rtauargus.native:::parse_batch(p)
   suppresses <- cmds[6:8]
 
   # the class is rta_Suppress (not rta_MOD / rta_OPT / rta_RND)
@@ -77,7 +77,7 @@ test_that("MOD option list is parsed into normalised fields", {
     "<READMICRODATA>",
     "<SUPPRESS> MOD(1, 60, 1, 0, 1, 0.1, 0.2, 0.3)"
   ))
-  cmd <- rtauargus:::parse_batch(p)[[6]]
+  cmd <- rtauargus.native:::parse_batch(p)[[6]]
   expect_equal(cmd$kind, "MOD")
   expect_equal(cmd$mod_max_time, 60L)
   expect_true(cmd$mod_singleton)
@@ -97,7 +97,7 @@ test_that("RND nested argument list is parsed (base, steps, time, partitions, st
     "<READMICRODATA>",
     "<SUPPRESS> RND(1, 10000, 2, 5, 0, 1, 1)"
   ))
-  cmd <- rtauargus:::parse_batch(p)[[6]]
+  cmd <- rtauargus.native:::parse_batch(p)[[6]]
   expect_equal(cmd$rnd_base, 10000L)
   expect_equal(cmd$rnd_step, 2L)
   expect_equal(cmd$rnd_time, 5L)
@@ -113,7 +113,7 @@ test_that("RND nested argument list is parsed (base, steps, time, partitions, st
     "<READMICRODATA>",
     "<SUPPRESS> RND(1, 100)"
   ))
-  cmd2 <- rtauargus:::parse_batch(p2)[[6]]
+  cmd2 <- rtauargus.native:::parse_batch(p2)[[6]]
   expect_equal(cmd2$rnd_base, 100L)
   expect_equal(cmd2$rnd_step, 0L)
   expect_equal(cmd2$rnd_time, 10L) # default
@@ -122,7 +122,7 @@ test_that("RND nested argument list is parsed (base, steps, time, partitions, st
 
 test_that("WRITETABLE grammar: options, empty-options form and type bounds", {
   p <- local_arb(c('<WRITETABLE> (1, 5, AR+, "out.tab")'))
-  cmd <- rtauargus:::parse_batch(p)[[1]]
+  cmd <- rtauargus.native:::parse_batch(p)[[1]]
   expect_s3_class(cmd, "rta_WriteTable")
   expect_equal(cmd$tab_no, 1L)
   expect_equal(cmd$output_type, 5L)
@@ -131,7 +131,7 @@ test_that("WRITETABLE grammar: options, empty-options form and type bounds", {
 
   # the legacy empty-options form uses a doubled comma
   p2 <- local_arb(c('<WRITETABLE> (2, 1,, "f.csv")'))
-  cmd2 <- rtauargus:::parse_batch(p2)[[1]]
+  cmd2 <- rtauargus.native:::parse_batch(p2)[[1]]
   expect_equal(cmd2$tab_no, 2L)
   expect_equal(cmd2$output_type, 1L)
   expect_length(cmd2$options, 0)
@@ -139,7 +139,7 @@ test_that("WRITETABLE grammar: options, empty-options form and type bounds", {
 
   # output types are bounded 1..7
   p3 <- local_arb(c('<WRITETABLE> (1, 8, "f.csv")'))
-  expect_error(rtauargus:::parse_batch(p3), class = "BatchError")
+  expect_error(rtauargus.native:::parse_batch(p3), class = "BatchError")
 })
 
 test_that("READTABLE flags are parsed", {
@@ -151,7 +151,7 @@ test_that("READTABLE flags are parsed", {
     '<SPECIFYTABLE> "A"|"R"|',
     "<READTABLE> 1T"
   ))
-  cmd <- rtauargus:::parse_batch(p)[[4]]
+  cmd <- rtauargus.native:::parse_batch(p)[[4]]
   expect_s3_class(cmd, "rta_ReadTable")
   expect_equal(cmd$additivity, 1L)
   expect_true(cmd$keep_status)
@@ -162,14 +162,14 @@ test_that("READTABLE flags are parsed", {
     '<SPECIFYTABLE> "A"|"R"|',
     "<READTABLE> 0"
   ))
-  cmd2 <- rtauargus:::parse_batch(p2)[[4]]
+  cmd2 <- rtauargus.native:::parse_batch(p2)[[4]]
   expect_equal(cmd2$additivity, 0L)
   expect_false(cmd2$keep_status)
 })
 
 test_that("RECODE command fields are parsed", {
   p <- local_arb(c('<RECODE> 1, A, "a.grc"'))
-  cmd <- rtauargus:::parse_batch(p)[[1]]
+  cmd <- rtauargus.native:::parse_batch(p)[[1]]
   expect_s3_class(cmd, "rta_Recode")
   expect_equal(cmd$tab_no, 1L)
   expect_equal(cmd$var_name, "A")
@@ -179,7 +179,7 @@ test_that("RECODE command fields are parsed", {
 test_that("command ordering violations are rejected", {
   # OPENMETADATA before any data file
   p <- local_arb(c('<OPENMETADATA> "d.rda"'))
-  expect_error(rtauargus:::parse_batch(p), class = "BatchError")
+  expect_error(rtauargus.native:::parse_batch(p), class = "BatchError")
 
   # SUPPRESS directly after SPECIFYTABLE (before any SAFETYRULE)
   p2 <- local_arb(c(
@@ -188,22 +188,22 @@ test_that("command ordering violations are rejected", {
     '<SPECIFYTABLE> "A"|"R"|',
     "<SUPPRESS> MOD(1)"
   ))
-  expect_error(rtauargus:::parse_batch(p2), class = "BatchError")
+  expect_error(rtauargus.native:::parse_batch(p2), class = "BatchError")
 
   # unknown keyword
   p3 <- local_arb(c('<NOTAKNOWN> x'))
-  expect_error(rtauargus:::parse_batch(p3), class = "BatchError")
+  expect_error(rtauargus.native:::parse_batch(p3), class = "BatchError")
 })
 
 test_that("BatchError is signalled without warnings (stop() regression)", {
   # stop(cond, call. = FALSE) used to warn "additional arguments ignored";
   # the call is hidden via the condition's own call = NULL field instead.
   expect_no_warning(
-    expect_error(rtauargus:::stop_batch("boom"), class = "BatchError")
+    expect_error(rtauargus.native:::stop_batch("boom"), class = "BatchError")
   )
   expect_no_warning(
     expect_error(
-      rtauargus:::parse_batch(local_arb(c('<NOTAKNOWN> x'))),
+      rtauargus.native:::parse_batch(local_arb(c('<NOTAKNOWN> x'))),
       class = "BatchError")
   )
 })

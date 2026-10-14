@@ -76,21 +76,21 @@ utiliseront les valeurs par défaut du package.)
 \tabular{lll}{
 \strong{Option}                  \tab  \strong{Default Value}                                    \tab \strong{Function}   \cr
 \verb{------------------------}  \tab  \verb{---------------------------------}                      \tab \verb{-------------}\cr
-rtauargus.decimals               \tab  \Sexpr{rtauargus:::op.rtauargus$rtauargus.decimals}           \tab \code{micro_asc_rda()}\cr
-rtauargus.totcode                \tab "\Sexpr{rtauargus:::op.rtauargus$rtauargus.totcode}"           \tab                     \cr
-rtauargus.missing                \tab "\Sexpr{rtauargus:::op.rtauargus$rtauargus.missing}"           \tab                     \cr
-rtauargus.hierleadstring         \tab "\Sexpr{rtauargus:::op.rtauargus$rtauargus.hierleadstring}"    \tab                     \cr
+rtauargus.decimals               \tab  \Sexpr{rtauargus.native:::op.rtauargus$rtauargus.decimals}           \tab \code{micro_asc_rda()}\cr
+rtauargus.totcode                \tab "\Sexpr{rtauargus.native:::op.rtauargus$rtauargus.totcode}"           \tab                     \cr
+rtauargus.missing                \tab "\Sexpr{rtauargus.native:::op.rtauargus$rtauargus.missing}"           \tab                     \cr
+rtauargus.hierleadstring         \tab "\Sexpr{rtauargus.native:::op.rtauargus$rtauargus.hierleadstring}"    \tab                     \cr
 \verb{------------------------}  \tab  \verb{---------------------------------}                      \tab \verb{-------------}\cr
-rtauargus.response_var           \tab "\Sexpr{rtauargus:::op.rtauargus$rtauargus.response_var}"      \tab \code{micro_arb()}    \cr
-rtauargus.weighted               \tab  \Sexpr{rtauargus:::op.rtauargus$rtauargus.weighted}           \tab                     \cr
-rtauargus.linked                 \tab  \Sexpr{rtauargus:::op.rtauargus$rtauargus.linked}             \tab                     \cr
-rtauargus.output_type            \tab "\Sexpr{rtauargus:::op.rtauargus$rtauargus.output_type}"       \tab                     \cr
-rtauargus.output_options         \tab "\Sexpr{rtauargus:::op.rtauargus$rtauargus.output_options}"    \tab                     \cr
+rtauargus.response_var           \tab "\Sexpr{rtauargus.native:::op.rtauargus$rtauargus.response_var}"      \tab \code{micro_arb()}    \cr
+rtauargus.weighted               \tab  \Sexpr{rtauargus.native:::op.rtauargus$rtauargus.weighted}           \tab                     \cr
+rtauargus.linked                 \tab  \Sexpr{rtauargus.native:::op.rtauargus$rtauargus.linked}             \tab                     \cr
+rtauargus.output_type            \tab "\Sexpr{rtauargus.native:::op.rtauargus$rtauargus.output_type}"       \tab                     \cr
+rtauargus.output_options         \tab "\Sexpr{rtauargus.native:::op.rtauargus$rtauargus.output_options}"    \tab                     \cr
 \verb{------------------------}  \tab  \verb{---------------------------------}                      \tab \verb{-------------}\cr
-rtauargus.missing_dir            \tab "\Sexpr{rtauargus:::op.rtauargus$rtauargus.missing_dir}"       \tab \code{run_arb()}      \cr
-rtauargus.tauargus_exe           \tab "\Sexpr{rtauargus:::op.rtauargus$rtauargus.tauargus_exe}"      \tab                     \cr
-rtauargus.show_batch_console     \tab  \Sexpr{rtauargus:::op.rtauargus$rtauargus.show_batch_console} \tab                     \cr
-rtauargus.import                 \tab  \Sexpr{rtauargus:::op.rtauargus$rtauargus.import}             \tab
+rtauargus.missing_dir            \tab "\Sexpr{rtauargus.native:::op.rtauargus$rtauargus.missing_dir}"       \tab \code{run_arb()}      \cr
+rtauargus.tauargus_exe           \tab "\Sexpr{rtauargus.native:::op.rtauargus$rtauargus.tauargus_exe}"      \tab                     \cr
+rtauargus.show_batch_console     \tab  \Sexpr{rtauargus.native:::op.rtauargus$rtauargus.show_batch_console} \tab                     \cr
+rtauargus.import                 \tab  \Sexpr{rtauargus.native:::op.rtauargus$rtauargus.import}             \tab
 }
 }
 

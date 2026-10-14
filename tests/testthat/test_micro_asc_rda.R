@@ -65,7 +65,7 @@ attendu <- c(
 
 test_that("write_rda", {
 
-  write_rda <- rtauargus:::write_rda
+  write_rda <- rtauargus.native:::write_rda
 
   expect_equal(
     write_rda(input) %>% strsplit("\n  +") %>% unlist(),

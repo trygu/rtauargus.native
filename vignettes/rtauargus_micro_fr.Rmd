@@ -152,7 +152,7 @@ Au chargement du package, la console affiche quelques informations :
 
 
 ``` r
-library(rtauargus)
+library(rtauargus.native)
 ```
 
 En particulier, un emplacement plausible pour le logiciel &tau;-Argus est

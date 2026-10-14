@@ -1,5 +1,5 @@
 library(testthat)
-library(rtauargus)
+library(rtauargus.native)
 library(dplyr)
 
-test_check("rtauargus")
+test_check("rtauargus.native")

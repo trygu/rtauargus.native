@@ -2,7 +2,7 @@
 
 context("suppr_writetable")
 
-suppr_writetable <- rtauargus:::suppr_writetable
+suppr_writetable <- rtauargus.native:::suppr_writetable
 out <- c("t1.csv",  "tmp/t2.csv", "~/t3.csv")
 outn <- normalizePath(out, mustWork = FALSE)
 

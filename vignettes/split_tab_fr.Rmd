@@ -167,7 +167,7 @@ Nous présentons ici un exemple de pose de secret sur un tableau à 4 dimensions
 ```r
 library(tictoc)
 library(dplyr)
-library(rtauargus)
+library(rtauargus.native)
 ```
 
 

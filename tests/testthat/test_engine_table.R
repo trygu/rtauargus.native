@@ -13,7 +13,7 @@ run_arb <- function(lines) {
   arb <- tempfile(fileext = ".arb")
   on.exit(unlink(arb), add = TRUE)
   writeLines(lines, arb)
-  suppressMessages(rtauargus:::run_engine_batch(arb))
+  suppressMessages(rtauargus.native:::run_engine_batch(arb))
 }
 
 table_batch <- function(tab_file = file.path(fx, "tab.tab"),
@@ -60,20 +60,20 @@ test_that("table input batch reads the .tab values", {
   # missing-code row and column are empty
   expect_equal(
     tauargusengine::tauargus_get_table_cell_status(eng_table$tau, 0L, lin(4L, 2L) - 1L),
-    rtauargus:::CS_EMPTY)
+    rtauargus.native:::CS_EMPTY)
   expect_equal(
     tauargusengine::tauargus_get_table_cell_status(eng_table$tau, 0L, lin(2L, 4L) - 1L),
-    rtauargus:::CS_EMPTY)
+    rtauargus.native:::CS_EMPTY)
 })
 
 test_that("READTABLE 1T keeps the file statuses as safe-manual", {
   # every cell in tab.tab carries the status character "S"
   expect_equal(
     tauargusengine::tauargus_get_table_cell_status(eng_table$tau, 0L, lin(1L, 1L) - 1L),
-    rtauargus:::CS_SAFE_MANUAL)
+    rtauargus.native:::CS_SAFE_MANUAL)
   expect_equal(
     tauargusengine::tauargus_get_table_cell_status(eng_table$tau, 0L, lin(2L, 2L) - 1L),
-    rtauargus:::CS_SAFE_MANUAL)
+    rtauargus.native:::CS_SAFE_MANUAL)
 })
 
 test_that("the 22-field cell accessor exposes response, frequency, shadow", {
@@ -83,7 +83,7 @@ test_that("the 22-field cell accessor exposes response, frequency, shadow", {
   expect_equal(cell$resp, 10000)
   expect_equal(cell$freq, 2)
   expect_equal(cell$shadow, 10000)
-  expect_equal(cell$status, rtauargus:::CS_SAFE_MANUAL)
+  expect_equal(cell$status, rtauargus.native:::CS_SAFE_MANUAL)
 
   # grand total
   gt <- tauargusengine::tauargus_get_table_cell(eng_table$tau, 0L, c(0L, 0L), 0L)
@@ -121,5 +121,5 @@ test_that("OPENTABLEDATA before a data file is rejected by the parser", {
     sprintf('<OPENMETADATA> "%s"', file.path(fx, "tab.rda")),
     '<OPENTABLEDATA> "%s"', file.path(fx, "tab.tab")
   ), p)
-  expect_error(rtauargus:::parse_batch(p), class = "BatchError")
+  expect_error(rtauargus.native:::parse_batch(p), class = "BatchError")
 })

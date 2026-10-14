@@ -110,7 +110,7 @@ When loading the package, the console displays some information:
 
 
 ```{r}
-library(rtauargus)
+library(rtauargus.native)
 ```
 
 The batch files are executed by the native engine embedded in the

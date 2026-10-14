@@ -4,7 +4,7 @@ context(":::cite")
 
 test_that("cite", {
 
-  cite <- rtauargus:::cite
+  cite <- rtauargus.native:::cite
 
   expect_equal(
     cite(c("A", "", "C")),
@@ -30,7 +30,7 @@ context(":::df_param_defaut")
 
 test_that("df_param_defaut", {
 
-  df_param_defaut <- rtauargus:::df_param_defaut
+  df_param_defaut <- rtauargus.native:::df_param_defaut
 
   # fonctions préremplies ...................................
 
@@ -113,7 +113,7 @@ test_that("df_param_defaut", {
 
 context(":::following_dup")
 
-following_dup <- rtauargus:::following_dup
+following_dup <- rtauargus.native:::following_dup
 
 test_that("following_dup", {
 

@@ -111,7 +111,7 @@ It's a boolean variable, whether the cell has to be masked or not.
 Manages the secondary secret of a list of tables
 }
 \examples{
-library(rtauargus)
+library(rtauargus.native)
 library(dplyr)
 data(turnover_act_size)
 data(turnover_act_cj)
