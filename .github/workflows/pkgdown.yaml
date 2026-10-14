@@ -32,22 +32,18 @@ jobs:
         with:
           use-public-rspm: true
 
-      # tauargusengine is not on CRAN: install the pinned version from
-      # the GitHub Packages registry first (the dependency action
-      # would otherwise fail to resolve it). Needs the GITHUB_PAT
-      # secret (a PAT with read:packages on trygu/tauargus-engine);
-      # GITHUB_TOKEN cannot be used for R installs from GitHub
-      # Packages.
-      - name: Install tauargusengine (pinned, from GitHub Packages)
-        env:
-          TAUARGUSENGINE_PAT: ${{ secrets.GITHUB_PAT }}
+      # tauargusengine is not on CRAN: install the pinned binary from
+      # the engine's GitHub Release first (the dependency action would
+      # otherwise fail to resolve it).
+      - name: Install tauargusengine (pinned, from the GitHub Release)
         run: |
-          install.packages("pak", repos = "https://cloud.r-project.org")
-          pak::repo_add(github = "trygu", token = Sys.getenv("TAUARGUSENGINE_PAT"))
-          pak::pkg_install(
-            "tauargusengine",
-            version = Sys.getenv("TAUARGUSENGINE_VERSION")
-          )
+          install.packages(
+            paste0(
+              "https://github.com/trygu/tauargus-engine/releases/download/r-v",
+              Sys.getenv("TAUARGUSENGINE_VERSION"), "/tauargusengine_",
+              Sys.getenv("TAUARGUSENGINE_VERSION"),
+              "_r4.4.3_linux-x86_64.tar.gz"),
+            repos = NULL, type = "binary")
         shell: Rscript {0}
 
       - uses: r-lib/actions/setup-r-dependencies@v2

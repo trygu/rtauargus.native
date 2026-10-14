@@ -42,23 +42,28 @@ installation is required on the workstation.
 
 - **step 1: install the native engine (once)**
 
-  - From the GitHub Packages registry (source; needs CMake ≥ 3.16 and
-    a C++11 compiler):
+  From the GitHub Releases of the
+  [tauargus-engine](https://github.com/trygu/tauargus-engine/releases)
+  repository, pick the binary for your platform (R 4.4, no compiler):
 
-    ``` r
-    install.packages("pak")
-    pak::repo_add(github = "trygu", token = "<your GitHub personal access token>")
-    pak::pkg_install("tauargusengine")
-    ```
-
-  - Or a prebuilt binary from the engine's GitHub Releases (R 4.4, no
-    compiler; available for Linux x86_64, macOS arm64 and Windows
-    x86_64):
+  - Linux x86_64: `tauargusengine_X.Y.Z_r4.4.3_linux-x86_64.tar.gz`
+  - macOS arm64: `tauargusengine_X.Y.Z_r4.4.3_macos-arm64.tar.gz`
+  - Windows x86_64: `tauargusengine_X.Y.Z_r4.4.3_windows-x86_64.zip`
 
     ``` r
     install.packages(
-      "https://github.com/trygu/tauargus-engine/releases/download/r-v0.5.3/tauargusengine_0.5.3_linux-x86_64.tar.gz",
+      "https://github.com/trygu/tauargus-engine/releases/download/r-v0.5.3/tauargusengine_0.5.3_r4.4.3_linux-x86_64.tar.gz",
       repos = NULL, type = "binary"
+    )
+    ```
+
+  Or the source package `tauargusengine_X.Y.Z.tar.gz` from the same
+  release (needs CMake ≥ 3.16 and a C++11 compiler):
+
+    ``` r
+    install.packages(
+      "https://github.com/trygu/tauargus-engine/releases/download/r-v0.5.3/tauargusengine_0.5.3.tar.gz",
+      repos = NULL
     )
     ```
 
