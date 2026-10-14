@@ -229,7 +229,7 @@ jobs:
           # No build paths may be referenced by the loaded objects.
           # libR.so is provided by the R runtime, not the system, so
           # resolve it against R's own lib directory.
-          LDD="$(LD_LIBRARY_PATH="$(R RHOME)/lib" ldd "$RLIB/rtauargus.native/libs/rtauargus_native.so")"
+          LDD="$(LD_LIBRARY_PATH="$(R RHOME)/lib" ldd "$RLIB/rtauargus.native/libs/rtauargus.native.so")"
           echo "$LDD"
           if echo "$LDD" | grep -E "not found"; then
             echo "clean-room: missing shared object" >&2
@@ -251,7 +251,7 @@ jobs:
           test -f "$PKG/DESCRIPTION"
           test -f "$PKG/NAMESPACE"
           grep -q "^Package: rtauargus.native$" "$PKG/DESCRIPTION"
-          grep -q "^useDynLib(rtauargus_native, .registration = TRUE)$" "$PKG/NAMESPACE"
+          grep -q "^useDynLib(rtauargus.native, .registration = TRUE)$" "$PKG/NAMESPACE"
           if grep -q "import(tauargusengine)" "$PKG/NAMESPACE"; then
             echo "clean-room: package still imports the binding package" >&2
             exit 1
