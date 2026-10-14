@@ -41,7 +41,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  R_VERSION: "4.4.3"
+  R_VERSION: "4.5.3"
 
 jobs:
   build:
@@ -284,10 +284,10 @@ jobs:
             reports the exact engine SHA and HiGHS version this build came
             from.
 
-            Install both from this release (binary, no compiler; R 4.4.3):
+            Install both from this release (binary, no compiler; R 4.5.3):
 
                 install.packages(
-                  "https://github.com/trygu/rtauargus.native/releases/download/r-vX.Y.Z/tauargusengine_X.Y.Z_r4.4.3_linux-x86_64.tar.gz",
+                  "https://github.com/trygu/rtauargus.native/releases/download/r-vX.Y.Z/tauargusengine_X.Y.Z_r4.5_linux-x86_64.tar.gz",
                   repos = NULL, type = "binary")
                 install.packages(
                   "https://github.com/trygu/rtauargus.native/releases/download/r-vX.Y.Z/rtauargus.native_1.3.6.tar.gz",

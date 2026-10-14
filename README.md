@@ -28,9 +28,9 @@ release set contains the `tauargusengine` binary for your platform and the
 `rtauargus.native` source tarball (pure R, any platform):
 
 ```r
-# replace r4.4.3 and macos-arm64 with your R version and platform
+# replace r4.5 and macos-arm64 with your R version and platform
 install.packages(
-  "https://github.com/trygu/rtauargus.native/releases/download/r-v0.5.3/tauargusengine_0.5.3_r4.4.3_macos-arm64.tar.gz",
+  "https://github.com/trygu/rtauargus.native/releases/download/r-v0.5.3/tauargusengine_0.5.3_r4.5_macos-arm64.tar.gz",
   repos = NULL, type = "binary")
 install.packages(
   "https://github.com/trygu/rtauargus.native/releases/download/r-v0.5.3/rtauargus.native_1.3.6.tar.gz",
