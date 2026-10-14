@@ -106,7 +106,13 @@ new_engine <- function() {
     tauargus_set_number_tab(e$tau, e$n_tables)
     for (i in seq_along(e$tables)) {
       e$e_call_set_table(i - 1L, e$tables[[i]]$spec)
-      e$e_call_set_table_safety(i - 1L, e$tables[[i]]$srs)
+      if (isTRUE(e$is_table)) {
+        # Table input: tell the engine which columns carry freq/maxscore/status
+        # so primary rules are evaluated in CompletedTable.
+        e$e_call_set_table_safety_info(i - 1L, e$tables[[i]]$srs)
+      } else {
+        e$e_call_set_table_safety(i - 1L, e$tables[[i]]$srs)
+      }
     }
   }
 
@@ -184,6 +190,49 @@ new_engine <- function() {
       freq_perc = freq_marge
     )
     if (!isTRUE(ok)) stop_batch("SetTableSafety failed for table ", idx + 1L)
+  }
+
+  e$e_call_set_table_safety_info <- function(idx, srs) {
+    # Port of the Java/Python SetTableSafetyInfo call for a tabular table.
+    # It tells the engine which variable types are present so primary
+    # safety rules (frequency, dominance) are applied.
+    meta <- e$metadata
+    has_max_score <- meta_contains(meta, "TOP_N")
+    dom_n <- as.numeric(srs$dom_n)
+    dom_p <- as.numeric(srs$dom_k)
+    while (length(dom_n) < 4) { dom_n <- c(dom_n, 0); dom_p <- c(dom_p, 0) }
+    pq_p <- as.numeric(srs$pq_p)
+    pq_q <- as.numeric(srs$pq_q)
+    pq_n <- as.numeric(srs$pq_n)
+    while (length(pq_p) < 4) { pq_p <- c(pq_p, 0); pq_q <- c(pq_q, 0); pq_n <- c(pq_n, 0) }
+    has_freq <- length(srs$min_freq) > 0
+    freq_perc <- if (length(srs$freq_marge) > 0) as.integer(srs$freq_marge[1L]) else 0L
+    safe_min_rec <- if (length(srs$min_freq) > 0) as.integer(srs$min_freq[1L]) else 1L
+    has_status <- !(srs$dom_rule || srs$pq_rule || has_freq ||
+                      srs$zero_rule || srs$apply_weight || srs$apply_peep)
+
+    ok <- tauargus_set_table_safety_info(
+      e$tau,
+      index = idx,
+      has_maxscore = has_max_score,
+      dom = srs$dom_rule,
+      dom_n = dom_n,
+      dom_p = dom_p,
+      pq = srs$pq_rule,
+      pq_p = pq_p,
+      pq_q = pq_q,
+      pq_n = pq_n,
+      has_freq = has_freq,
+      freq_perc = freq_perc,
+      safe_min_rec = safe_min_rec,
+      has_status = has_status,
+      manual_perc = as.numeric(srs$manual_perc),
+      zero_rule = srs$zero_rule,
+      zero_range = as.numeric(srs$zero_range),
+      empty_as_ns = FALSE,
+      ns_range = 10L
+    )
+    if (!isTRUE(ok)) stop_batch("SetTableSafetyInfo failed for table ", idx + 1L)
   }
 
   e$read_microdata <- function() {
@@ -457,11 +506,13 @@ new_engine <- function() {
         stop_batch("Sum of topN ", x, " should not exceed the cell total ",
                    response)
       if (x > response) max_score[1L] <- max_score[1L] - 1e-9
-      for (j in 2L:length(max_score))
-        if (max_score[j] > max_score[j - 1L])
-          stop_batch("Error in the order of the TopN.\n", j - 1L, " = ",
-                     max_score[j - 1L], "\n", j, " = ", max_score[j], "\n",
-                     "This is not allowed.")
+      # 2L:length(x) is c(2, 1) when length is 1; guard the loop.
+      if (length(max_score) >= 2L)
+        for (j in 2L:length(max_score))
+          if (max_score[j] > max_score[j - 1L])
+            stop_batch("Error in the order of the TopN.\n", j - 1L, " = ",
+                       max_score[j - 1L], "\n", j, " = ", max_score[j], "\n",
+                       "This is not allowed.")
     }
 
     if (status == CS_EMPTY || (freq == 0 && response == 0))

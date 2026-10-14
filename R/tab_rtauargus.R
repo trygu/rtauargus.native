@@ -295,14 +295,24 @@ and the process may take longer.")
   # RESULTAT .............................
   if(output_type == 4){
 
+    # Type-4 output contains 'x' for suppressed response values and a
+    # variable number of trailing columns (Status alone, or Status + Dom).
+    # Read everything as character first, then convert the known numeric
+    # columns so the variable format is tolerated.
     res_import <- utils::read.csv(
       param_arb$output_names,
       header = FALSE,
-      col.names = c(explanatory_vars, value, freq, "Status","Dom"),
-      colClasses = c(rep("character", length(explanatory_vars)), rep("numeric",2), "character", "numeric"),
+      col.names = c(explanatory_vars, value, freq, "Status", "Dom"),
+      colClasses = "character",
       stringsAsFactors = FALSE,
-      na.strings = ""
+      na.strings = "",
+      fill = TRUE
     )
+    res_import[[value]] <- suppressWarnings(as.numeric(res_import[[value]]))
+    res_import[[freq]] <- suppressWarnings(as.numeric(res_import[[freq]]))
+    if ("Dom" %in% names(res_import)) {
+      res_import$Dom <- suppressWarnings(as.numeric(res_import$Dom))
+    }
     if(unif_labels){
       res_import <- cbind.data.frame(
         apply(res_import[,explanatory_vars,drop=FALSE], 2, rev_var_pour_tau_argus),
