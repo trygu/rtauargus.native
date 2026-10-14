@@ -1,0 +1,56 @@
+# Installs the pinned tauargusengine from the GitHub Packages registry
+# and runs the rtauargus test suite, including the native engine e2e
+# tests (tests/testthat/test_engine_*.R) that run .arb batches through
+# the installed tauargusengine.
+#
+# Requires a GITHUB_PAT secret with read:packages access to
+# trygu/tauargus-engine (the workflow's GITHUB_TOKEN cannot be used for
+# GitHub Packages R installs).
+
+name: tests
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: tests-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  TAUARGUSENGINE_VERSION: "0.5.3"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          use-public-rspm: true
+
+      - name: Install tauargusengine (pinned, from GitHub Packages)
+        env:
+          GITHUB_PAT: ${{ secrets.GITHUB_PAT }}
+        run: |
+          install.packages("pak", repos = "https://cloud.r-project.org")
+          pak::repo_add(github = "trygu", token = Sys.getenv("GITHUB_PAT"))
+          pak::pkg_install(
+            "tauargusengine",
+            version = Sys.getenv("TAUARGUSENGINE_VERSION")
+          )
+        shell: Rscript {0}
+
+      # Installs the remaining dependencies (tauargusengine is already
+      # installed and is skipped).
+      - uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+          extra-packages: any::testthat
+          needs: check
+
+      - name: Run the test suite
+        run: testthat::test_local(".", stop_on_failure = TRUE)
+        shell: Rscript {0}

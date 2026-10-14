@@ -20,6 +20,7 @@ jobs:
       group: pkgdown-${{ github.event_name != 'pull_request' || github.run_id }}
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
+      TAUARGUSENGINE_VERSION: "0.5.3"
     permissions:
       contents: write
     steps:
@@ -30,6 +31,24 @@ jobs:
       - uses: r-lib/actions/setup-r@v2
         with:
           use-public-rspm: true
+
+      # tauargusengine is not on CRAN: install the pinned version from
+      # the GitHub Packages registry first (the dependency action
+      # would otherwise fail to resolve it). Needs the GITHUB_PAT
+      # secret (a PAT with read:packages on trygu/tauargus-engine);
+      # GITHUB_TOKEN cannot be used for R installs from GitHub
+      # Packages.
+      - name: Install tauargusengine (pinned, from GitHub Packages)
+        env:
+          TAUARGUSENGINE_PAT: ${{ secrets.GITHUB_PAT }}
+        run: |
+          install.packages("pak", repos = "https://cloud.r-project.org")
+          pak::repo_add(github = "trygu", token = Sys.getenv("TAUARGUSENGINE_PAT"))
+          pak::pkg_install(
+            "tauargusengine",
+            version = Sys.getenv("TAUARGUSENGINE_VERSION")
+          )
+        shell: Rscript {0}
 
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:

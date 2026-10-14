@@ -16,7 +16,7 @@ Imports:
     sdcHierarchies,
     igraph,
     lifecycle,
-    tauargusengine
+    tauargusengine (>= 0.5.3)
 Suggests:
     testthat,
     knitr,

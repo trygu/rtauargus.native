@@ -29,7 +29,7 @@ It allows to:
 
 - create inputs (rda, arb, hst and tab files) from data in R format ;
 - generate the sequence of instructions to be executed in batch mode (arb file);
-- launch a τ-Argus batch in command line;
+- launch a τ-Argus batch (natively, through the `tauargusengine` package);
 - retrieve the results in R.
 
 These different operations can be executed in one go, but also in a modular way.
@@ -45,7 +45,30 @@ one is, from now on, encouraged.
 
 ## Installation
 
-* **most recent stable version** (recommended)
+*rtauargus* runs τ-Argus batch files through the **tauargusengine** R
+package, which embeds the native τ-Argus engine. No standalone
+τ-Argus installation is required on the workstation.
+
+* **step 1: install the native engine (once)**
+
+  - From the GitHub Packages registry (source; needs CMake ≥ 3.16 and a
+    C++11 compiler):
+    ```{r eval=FALSE}
+    install.packages("pak")
+    pak::repo_add(github = "trygu", token = "<your GitHub personal access token>")
+    pak::pkg_install("tauargusengine")
+    ```
+  - Or a prebuilt binary from the engine's GitHub Releases (R 4.4, no
+    compiler; available for Linux x86_64, macOS arm64 and Windows
+    x86_64):
+    ```{r eval=FALSE}
+    install.packages(
+      "https://github.com/trygu/tauargus-engine/releases/download/r-v0.5.3/tauargusengine_0.5.3_linux-x86_64.tar.gz",
+      repos = NULL, type = "binary"
+    )
+    ```
+
+* **step 2: install rtauargus** (most recent stable version)
 
   - For Insee agents:  
     ```{r eval=FALSE}
@@ -56,7 +79,7 @@ one is, from now on, encouraged.
     )
     ```
     
-  - Elsewhere:
+  - Elsewhere (after step 1, since `tauargusengine` is not on CRAN):
     ```{r eval=FALSE}
     install.packages("remotes")
     remotes::install_github(
@@ -82,15 +105,9 @@ When loading the package, the console displays some information:
 library(rtauargus)
 ```
 
-In particular, a plausible location for the &tau;-Argus software is
-predefined. This can be changed for the duration of the R session, as follows:
-
-```{r}
-loc_tauargus <- "Y:/Logiciels/TauArgus/TauArgus4.2.2b1/TauArgus.exe"
-options(rtauargus.tauargus_exe = loc_tauargus)
-```
-
-With this small adjustment done, the package is ready to be used.
+The batch files are executed by the native engine embedded in the
+`tauargusengine` package (see [Installation](#installation)); no
+τ-Argus executable is needed on the workstation.
 
 For the following demonstration, a fictitious table will be used:
 
@@ -160,7 +177,10 @@ same directory, too. To go further, you can consult the latest version of the
 
 ## Important notes
 
-The functions of *rtauargus* calling τ-Argus require that this software be accessible from the workstation. The download of τ-Argus is done on the [dedicated page](https://github.com/sdcTools/tauargus/releases) of the *sdcTools* git repository.
+The functions of *rtauargus* calling τ-Argus run the batch files with
+the native engine embedded in the **tauargusengine** package (see
+[Installation](#installation)). No standalone τ-Argus installation is
+required on the workstation.
 
 _The package was developed on the basis of open source versions of &tau;-Argus 
 (versions 4.2 and above), in particular the version used for this version is
