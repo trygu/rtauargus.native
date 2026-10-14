@@ -1,6 +1,6 @@
 # CRAN dependencies of the front-end: the Imports plus the Suggests used
-# by the vignettes and the test suite. tauargusengine is not on CRAN; it
-# is installed from the staged source package by the workflow.
+# by the vignettes and the test suite. The native engine is bundled in
+# the package itself (staged from the submodule by the workflow).
 #
 # Lives in a file (rather than an Rscript -e argument) because the
 # Windows runner mangles multi-line single-quoted -e scripts.

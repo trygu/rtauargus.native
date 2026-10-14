@@ -4,6 +4,15 @@ subtitle: History of changes / Historique des modifications
 output: rmarkdown::html_vignette
 ---
 
+## rtauargus 1.3.7
+
+[10/2026]
+
+The native tauargus-engine is now bundled in the package and built at
+install time: the release ships one self-contained package per platform
+instead of the separate `tauargusengine` binding package. Install
+procedure: one file from the GitHub Release (see README).
+
 ## rtauargus 1.3.6
 
 [09/2026]

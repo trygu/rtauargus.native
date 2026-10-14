@@ -1,7 +1,7 @@
-# Provenance check: the installed binding must report the engine commit
+# Provenance check: the installed package must report the engine commit
 # and the HiGHS version it was built from.
 
-library(tauargusengine)
+library(rtauargus.native)
 
 meta <- tauargus_engine_meta()
 stopifnot(!is.na(meta[["engine_sha"]]),
