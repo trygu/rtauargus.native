@@ -13,6 +13,10 @@ install time: the release ships one self-contained package per platform
 instead of the separate `tauargusengine` binding package. Install
 procedure: one file from the GitHub Release (see README).
 
+Fix a TopN check in the table reader that aborted every table with a
+single top contributor (`tab_rtauargus` with a `maxscore` column).
+README: per-platform installation and a runnable quick start.
+
 ## rtauargus 1.3.6
 
 [09/2026]
