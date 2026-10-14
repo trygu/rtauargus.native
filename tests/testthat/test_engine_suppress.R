@@ -51,11 +51,13 @@ test_that("MOD suppression sets secondary cells and the audit reflects it", {
 
   # AHiTaS marks the column-A total secondary (verified vs the reference);
   # its row carries the "M" status symbol and the AR+ interval columns
+  # With legacy defaults (response as cost, lambda=1) the cost column is
+  # the response value; the previous frequency/log default gave log(freq+1).
   expect_identical(lines[2],
-    '"Total";" A";21000.00;6;21000.00;1.95;5000.00;5000.00;M;0.01;0.01;-0.00;40000.00;40000.00;100.00;90.48;190.48')
+    '"Total";" A";21000.00;6;21000.00;21000.00;5000.00;5000.00;M;0.01;0.01;-0.00;40000.00;40000.00;100.00;90.48;190.48')
   # grand total stays safe and untouched
   expect_identical(lines[1],
-    '"Total";"Total";40000.00;10;40000.00;2.40;5000.00;5000.00;S;0.01;0.01;0.00;0.00;0.00;0;0;0')
+    '"Total";"Total";40000.00;10;40000.00;40000.00;5000.00;5000.00;S;0.01;0.01;0.00;0.00;0.00;0;0;0')
   # empty cells are audited as "E"
   expect_identical(lines[4],
     '"Total";" X";0.00;0;0.00;0.00;0.00;0.00;E;0.00;0.00;0.00;0.00;0.00;0;0;0')
@@ -82,9 +84,9 @@ test_that("OPT suppression sets secondary cells and audits", {
   expect_length(lines, 20)
   # same secondary cell and same audit rows as the reference engine
   expect_identical(lines[1],
-    '"Total";"Total";40000.00;10;40000.00;2.40;5000.00;5000.00;S;0.01;0.01;0.00;0.00;0.00;0;0;0')
+    '"Total";"Total";40000.00;10;40000.00;40000.00;5000.00;5000.00;S;0.01;0.01;0.00;0.00;0.00;0;0;0')
   expect_identical(lines[2],
-    '"Total";" A";21000.00;6;21000.00;1.95;5000.00;5000.00;M;0.01;0.01;-0.00;40000.00;40000.00;100.00;90.48;190.48')
+    '"Total";" A";21000.00;6;21000.00;21000.00;5000.00;5000.00;M;0.01;0.01;-0.00;40000.00;40000.00;100.00;90.48;190.48')
   expect_equal(
     tauargusengine::tauargus_get_table_cell_status(eng$tau, 0L, lin(1L, 2L) - 1L),
     rtauargus.native:::CS_SECONDARY_UNSAFE)
