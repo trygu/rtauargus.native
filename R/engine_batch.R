@@ -207,7 +207,7 @@ new_anco            <- function() rta_cmd("Anco")
 new_clear           <- function() rta_cmd("Clear")
 
 new_specify_table <- function(exp_vars, resp_var, shadow_var = "",
-                              cost_var = "", lam = 0) {
+                              cost_var = "", lam = 1) {
   rta_cmd("SpecifyTable", exp_vars = exp_vars, resp_var = resp_var,
           shadow_var = shadow_var, cost_var = cost_var, lam = lam)
 }
@@ -277,7 +277,7 @@ rta_parse_specify_table <- function(tok) {
 
   shadow <- ""
   cost <- ""
-  lam <- 0
+  lam <- 1
   if (tok$get_line() != "") {
     shadow <- tok$next_field("|")
     if (tok$get_line() != "") cost <- tok$next_field(",")

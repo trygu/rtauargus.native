@@ -127,9 +127,19 @@ new_engine <- function() {
     # response variable (Java: indexOfShadowVariable() falls back to resp).
     shadow_idx <- if (is_freq) -1L else
       if (nzchar(spec$shadow_var)) index_of(spec$shadow_var) else resp_idx
-    cost_idx <- -1L
-    if (nzchar(spec$cost_var) && !(spec$cost_var %in% c("-1", "-2", "-3")))
+    # Legacy default: omitted cost means the response variable;
+    # explicit special codes -1/-2/-3 map to the native sentinels.
+    if (!nzchar(spec$cost_var)) {
+      cost_idx <- resp_idx
+    } else if (spec$cost_var == "-1") {
+      cost_idx <- -1L
+    } else if (spec$cost_var == "-2") {
+      cost_idx <- -2L
+    } else if (spec$cost_var == "-3") {
+      cost_idx <- -3L
+    } else {
       cost_idx <- index_of(spec$cost_var)
+    }
 
     req_idx <- index_of("REQUEST")
 
