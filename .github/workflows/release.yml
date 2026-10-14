@@ -63,24 +63,24 @@ jobs:
         with:
           r-version: ${{ env.R_VERSION }}
 
+      # pandoc for the vignette build (not preinstalled on macos/windows).
+      - uses: r-lib/actions/setup-pandoc@v2
+
       - name: Install system dependencies (linux)
         if: matrix.osname == 'linux'
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
-            libxml2-dev libcurl4-openssl-dev libssl-dev
+            libxml2-dev libcurl4-openssl-dev libssl-dev libuv1-dev
 
       # CRAN dependencies of the front-end (needed to build its tarball
       # and to run the test suite). tauargusengine is not on CRAN; it is
-      # installed from the staged source package below.
+      # installed from the staged source package below. The script lives
+      # in the repo (tools/) because the Windows runner mangles multi-line
+      # single-quoted Rscript -e arguments.
       - name: Install package dependencies
         shell: bash
-        run: |
-          Rscript -e 'install.packages(
-            c("purrr", "dplyr", "tidyr", "data.table", "gdata", "stringr",
-              "rlang", "zoo", "sdcHierarchies", "igraph", "lifecycle",
-              "testthat", "knitr", "rmarkdown", "visNetwork", "tictoc"),
-            repos = "https://cloud.r-project.org")'
+        run: Rscript tools/install-deps.R
 
       # Stage the distributable tauargusengine source package from the
       # submodule. On a release tag the version comes from the tag
@@ -129,13 +129,7 @@ jobs:
           mkdir -p "$RLIB"
           R CMD INSTALL --library="$RLIB" build/dist/tauargusengine_*.tar.gz
           R CMD INSTALL --library="$RLIB" build/dist/rtauargus.native_*.tar.gz
-          R_LIBS="$RLIB" Rscript -e '
-            library(tauargusengine)
-            meta <- tauargus_engine_meta()
-            stopifnot(!is.na(meta[["engine_sha"]]),
-                      nchar(meta[["highs_version"]]) > 0L)
-            cat("engine meta:", meta[["engine_sha"]],
-                meta[["highs_version"]], "\n")'
+          R_LIBS="$RLIB" Rscript tools/engine-meta-check.R
           cd tests
           R_LIBS="$RLIB" Rscript testthat.R
           cd "$GITHUB_WORKSPACE"
