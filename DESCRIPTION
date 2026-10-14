@@ -21,7 +21,8 @@ Suggests:
     testthat,
     knitr,
     rmarkdown,
-    visNetwork
+    visNetwork,
+    tictoc
 Authors@R: c(
     person(
       "Pierre-Yves", "Berrard",

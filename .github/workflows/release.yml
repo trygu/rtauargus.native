@@ -79,7 +79,7 @@ jobs:
           Rscript -e 'install.packages(
             c("purrr", "dplyr", "tidyr", "data.table", "gdata", "stringr",
               "rlang", "zoo", "sdcHierarchies", "igraph", "lifecycle",
-              "testthat", "knitr", "rmarkdown", "visNetwork"),
+              "testthat", "knitr", "rmarkdown", "visNetwork", "tictoc"),
             repos = "https://cloud.r-project.org")'
 
       # Stage the distributable tauargusengine source package from the
