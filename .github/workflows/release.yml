@@ -288,6 +288,19 @@ jobs:
           pattern: "*"
           path: dist
 
+      - uses: actions/checkout@v4
+
+      - name: Render release body for this tag
+        id: body
+        run: |
+          TAG="${GITHUB_REF#refs/tags/}"
+          RVER="$(awk -F': ' '/^Version:/{print $2; exit}' DESCRIPTION)"
+          sed "s|@TAG@|${TAG}|g; s|@RVER@|${RVER}|g; s|@RVERSION@|${R_VERSION}|g" \
+            .github/release-notes.md > release-notes.md
+          echo "body<<RELEASE_BODY_EOF" >> "$GITHUB_OUTPUT"
+          cat release-notes.md >> "$GITHUB_OUTPUT"
+          echo "RELEASE_BODY_EOF" >> "$GITHUB_OUTPUT"
+
       - name: GitHub Release with source + binaries
         uses: softprops/action-gh-release@v2
         with:
@@ -297,25 +310,4 @@ jobs:
             dist/bin-macos-arm64/*
             dist/bin-windows-x86_64/*
           generate_release_notes: true
-          body: |
-            R release: one self-contained `rtauargus.native` package per
-            platform. The native tauargus-engine binding is now bundled
-            inside the package (built from the pinned tauargus-engine
-            submodule); the separate `tauargusengine` package is no
-            longer released. `rtauargus.native::tauargus_engine_meta()`
-            reports the exact engine SHA and HiGHS version this build
-            came from.
-
-            Install from this release (binary, no compiler; R 4.5.3):
-
-                install.packages(
-                  "https://github.com/trygu/rtauargus.native/releases/download/r-v0.5.4/rtauargus.native_1.3.7_r4.5.3_linux-x86_64.tar.gz",
-                  repos = NULL, type = "binary")
-                library(rtauargus.native)
-
-            (macOS: ..._macos-arm64.tar.gz; Windows:
-            ..._windows-x86_64.zip)
-
-            The source tarball builds HiGHS and the engine at install
-            time (CMake >= 3.16 and a C++11 compiler required) and
-            installs on any platform.
+          body: ${{ steps.body.outputs.body }}

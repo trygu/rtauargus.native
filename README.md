@@ -27,7 +27,7 @@ Windows:
 
 ```r
 install.packages(
-  "https://github.com/trygu/rtauargus.native/releases/download/r-v0.5.4/rtauargus.native_1.3.7_r4.5.3_windows-x86_64.zip",
+  "https://github.com/trygu/rtauargus.native/releases/download/r-v0.5.5/rtauargus.native_1.3.7_r4.5.3_windows-x86_64.zip",
   repos = NULL, type = "binary")
 library(rtauargus.native)
 ```
@@ -36,7 +36,7 @@ macOS (Apple silicon; the release targets arm64):
 
 ```r
 install.packages(
-  "https://github.com/trygu/rtauargus.native/releases/download/r-v0.5.4/rtauargus.native_1.3.7_r4.5.3_macos-arm64.tar.gz",
+  "https://github.com/trygu/rtauargus.native/releases/download/r-v0.5.5/rtauargus.native_1.3.7_r4.5.3_macos-arm64.tar.gz",
   repos = NULL, type = "binary")
 library(rtauargus.native)
 ```
@@ -45,7 +45,7 @@ Linux:
 
 ```r
 install.packages(
-  "https://github.com/trygu/rtauargus.native/releases/download/r-v0.5.4/rtauargus.native_1.3.7_r4.5.3_linux-x86_64.tar.gz",
+  "https://github.com/trygu/rtauargus.native/releases/download/r-v0.5.5/rtauargus.native_1.3.7_r4.5.3_linux-x86_64.tar.gz",
   repos = NULL, type = "binary")
 library(rtauargus.native)
 ```
@@ -55,12 +55,12 @@ time):
 
 ```r
 install.packages(
-  "https://github.com/trygu/rtauargus.native/releases/download/r-v0.5.4/rtauargus.native_1.3.7.tar.gz",
+  "https://github.com/trygu/rtauargus.native/releases/download/r-v0.5.5/rtauargus.native_1.3.7.tar.gz",
   repos = NULL)
 library(rtauargus.native)
 ```
 
-Replace `r-v0.5.4` with the latest release tag.
+Replace `r-v0.5.5` with the latest release tag.
 
 ## Quick start
 
@@ -105,10 +105,46 @@ and returns the input table with a `Status` column:
 - `D`: secondary secret
 - `V`: valid, no masking needed
 
+## Running your own .arb batch
+
+The quick start call already wrote the table input set (`ex1.tab` for
+the values, `ex1.rda` for the metadata) into `dir_name`. You can drive
+that same input set from a hand-written batch with `run_arb()`; the
+legacy batch grammar is a drop-in. This batch applies the same primary
+and secondary rules and exports a pivot CSV with a status column
+(`AS+`):
+
+```r
+dir <- file.path(tempdir(), "tauargus_ex1")
+arb <- file.path(dir, "ex1_hand.arb")
+writeLines(c(
+  sprintf('<OPENTABLEDATA> "%s"', file.path(dir, "ex1.tab")),
+  sprintf('<OPENMETADATA> "%s"', file.path(dir, "ex1.rda")),
+  '<SPECIFYTABLE> "ACTIVITY""SIZE"|"VAL"||',
+  "<SAFETYRULE> FREQ(3,10)|NK(1,85)",
+  "<READTABLE> 1",
+  "<SUPPRESS> MOD(1,5,1,0,0)",
+  sprintf('<WRITETABLE> (1,2,AS+,"%s")', file.path(dir, "ex1_hand.csv"))
+), arb)
+
+run_arb(arb)
+read.csv(file.path(dir, "ex1_hand.csv"))
+```
+
+The lines follow the legacy grammar: `OPENTABLEDATA` / `OPENMETADATA`
+open the input set, `SPECIFYTABLE` declares the explanatory and
+response variables, `SAFETYRULE` sets the primary rules, `READTABLE`
+loads the table and `SUPPRESS` runs the secondary suppression. The
+four `WRITETABLE` fields are the table number, the output format
+(1 plain CSV, 2 pivot CSV, 3 code value, 4 SBS, 5 intermediate),
+option letters (`AS+` adds the Status column) and the output file.
+
+`run_arb()` runs silently and returns `NULL` by default; the results
+land in the output file. Pass `import = TRUE` to get a list of
+data frames back into R.
+
 To protect microdata instead of a pre-aggregated table, use
-`micro_rtauargus()` (see the vignette `rtauargus_micro`). To run your
-own `.arb` batch file, use `run_arb()`: the legacy batch grammar is a
-drop-in.
+`micro_rtauargus()` (see the vignette `rtauargus_micro`).
 
 ## Checking the installed engine
 
