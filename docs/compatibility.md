@@ -28,3 +28,22 @@ which is bundled in the package and built at install time.
 - Adds `audit_jj(jjfile)` (the CSP intervalle audit), the engine object's
   `audit(tab)` method and the `with_audit` table export; these have no
   upstream counterpart.
+
+## Differences from legacy Tau-Argus results
+
+- Secondary suppression can differ cell by cell between this package
+  and a legacy run. OPT and MOD solve an integer program, and when
+  several suppression patterns are near-optimal, the legacy CPLEX
+  backend and the HiGHS backend can pick different ones. Both patterns
+  protect the table to the same standard: in the sy1 reference batch
+  the two runs differ in 3 of 1654 cells (0.2%), the suppressed weight
+  differs by 9 units (0.09%) and the secondary response by 149777
+  (0.0016%), and the audit reports 0 unsafe cells for both patterns.
+  Primary suppressions (apriori and manual) are deterministic and
+  match exactly.
+- WRITETABLE output types 6 (JJ) and 7 (CKM) are not implemented; the
+  legacy writers for these formats were GUI-only Java with no native
+  equivalent. The command fails with a clear error. Types 1 to 5
+  follow the legacy argument mapping (in 0.5.4 and earlier, types 2
+  to 4 were written with a single argument set that did not match
+  legacy; that was fixed in 0.5.5).
