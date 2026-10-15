@@ -20,8 +20,14 @@ Each GitHub Release (tags `r-v*`) contains one binary per platform
 plus a source tarball. The binaries are built for R 4.5.3 (the `r4.5.3`
 in the file name) and install without a compiler. The source tarball
 works with other R versions and needs CMake >= 3.16 and a C++11
-compiler. The CRAN dependencies (dplyr, data.table, sdcHierarchies,
-...) install from CRAN as usual.
+compiler. The CRAN dependencies below install from CRAN as usual
+(on Linux they compile from source, and `igraph` takes a few minutes):
+
+```r
+install.packages(c("purrr", "dplyr", "tidyr", "data.table", "gdata",
+                   "stringr", "rlang", "zoo", "sdcHierarchies",
+                   "igraph", "lifecycle"))
+```
 
 Windows:
 

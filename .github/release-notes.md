@@ -31,8 +31,14 @@ Linux:
 
 `type = "binary"` is only supported on Windows and macOS. On
 Linux the prebuilt tarball installs as a source package, so the
-argument is omitted. The CRAN dependencies (dplyr, data.table,
-sdcHierarchies, ...) install from CRAN as usual.
+argument is omitted.
+
+The CRAN dependencies install from CRAN as usual (on Linux they
+compile from source):
+
+    install.packages(c("purrr", "dplyr", "tidyr", "data.table",
+                       "gdata", "stringr", "rlang", "zoo",
+                       "sdcHierarchies", "igraph", "lifecycle"))
 
 The source tarball builds HiGHS and the engine at install
 time (CMake >= 3.16 and a C++11 compiler required) and
