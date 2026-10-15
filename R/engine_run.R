@@ -908,7 +908,7 @@ new_engine <- function() {
     tauargus_undo_recode(e$tau, var_idx)
     sz <- tauargus_get_var_number_of_codes(e$tau, var_idx)
     n_codes <- as.integer(sz[1L])
-    index_by_code <- numeric(0)
+    index_by_code <- list()
     for (i in seq_len(n_codes)) {
       p <- tauargus_get_var_code(e$tau, var_idx, i - 1L)
       if (isTRUE(p$ok)) index_by_code[[p$code_string]] <- i
@@ -1193,7 +1193,7 @@ new_engine <- function() {
       var <- meta$variables[[vi + 1L]]
       arr <- character(0)
       lv <- list()
-      idx <- numeric(0)
+      idx <- list()
       for (ci in seq_len(max_dim[i])) {
         p <- tauargus_get_var_code(tau, vi, ci - 1L)
         if (!isTRUE(p$ok)) next
@@ -1205,7 +1205,8 @@ new_engine <- function() {
         nch <- if (isTRUE(pok$ok)) pok$n_children else 0L
         arr <- c(arr, cs)
         lv <- c(lv, list(c(nch, lev)))
-        pos <- length(arr)
+        # 0-based active code index (arr is 1-based in R).
+        pos <- length(arr) - 1L
         # Index on raw, trimmed, and (non-hierarchical) padded forms.
         for (cand in list(cs, trimws(cs), rta_var_normalise_code(var,
                                                                  trimws(cs))))
@@ -1328,7 +1329,7 @@ new_engine <- function() {
       prod <- rta_cartesian_product(ranges)
       if (nrow(prod) > 0L)
         for (i in seq_len(nrow(prod)))
-          e$e_apply_apriori_change(tab, prod[i, ], ap_type, x1, x2,
+          stats <- e$e_apply_apriori_change(tab, prod[i, ], ap_type, x1, x2,
                                   new_status, stats)
     }
 
@@ -1343,10 +1344,10 @@ new_engine <- function() {
     # Apply a single apriori change to one cell
     # (APriori.ProcessOneVarCode).
     res <- tauargus_get_table_cell(e$tau, tab, dim, 0L)
-    if (!isTRUE(res$ok)) return(invisible())
+    if (!isTRUE(res$ok)) return(stats)
     old_status <- as.integer(res$status)
     if (old_status %in% c(CS_EMPTY, CS_EMPTY_NONSTRUCT))
-      return(invisible())  # "met status EMPTY mag niks gebeuren"
+      return(stats)  # "met status EMPTY mag niks gebeuren"
 
     if (ap_type %in% c("C", "W")) {  # change cost
       cost <- if (x1 > 0) x1 else 1.0
@@ -1354,23 +1355,23 @@ new_engine <- function() {
         stats$cost_ok <- stats$cost_ok + 1L
       else
         stats$cost_err <- stats$cost_err + 1L
-      return(invisible())
+      return(stats)
     }
 
     if (ap_type == "PL") {
       if (x1 < 0 || x2 < 0) {
         stats$protlevel_err <- stats$protlevel_err + 1L
-        return(invisible())
+        return(stats)
       }
       if (!(old_status >= CS_UNSAFE_RULE && old_status <= CS_UNSAFE_MANUAL)) {
         stats$protlevel_err <- stats$protlevel_err + 1L
-        return(invisible())
+        return(stats)
       }
       # Apply to the primary-unsafe cell's protection levels (dim-based).
       ok <- isTRUE(tauargus_set_protection_levels_dim(e$tau, tab, dim, x1, x2))
       if (ok) stats$protlevel_ok <- stats$protlevel_ok + 1L
       else stats$protlevel_err <- stats$protlevel_err + 1L
-      return(invisible())
+      return(stats)
     }
 
     if (ap_type %in% c("S", "U", "P", "M", "ML")) {  # status change
@@ -1384,7 +1385,7 @@ new_engine <- function() {
         stats$status_ok <- stats$status_ok + 1L
       else
         stats$status_err <- stats$status_err + 1L
-      return(invisible())
+      return(stats)
     }
   }
 

@@ -113,6 +113,28 @@ test_that("inconsistent top-n values are rejected", {
   )
 })
 
+test_that("APRIORI applies hst status changes to table cells", {
+  hst <- tempfile(fileext = ".hst")
+  on.exit(unlink(hst), add = TRUE)
+  writeLines("A,A,u", hst)
+  eng <- run_arb(c(
+    sprintf('<OPENTABLEDATA> "%s"', file.path(fx, "tab.tab")),
+    sprintf('<OPENMETADATA> "%s"', file.path(fx, "tab.rda")),
+    '<SPECIFYTABLE> "Size""Region"|"Var2"|"Var2_Shadow"|"Var2"',
+    "<READTABLE> 1T",
+    sprintf('<APRIORI> "%s",1,",",0,0', hst),
+    "<GOINTERACTIVE>"
+  ))
+  # (A, A) = row 2, col 2 is forced primary-unsafe by the hst file
+  expect_equal(
+    tauargusengine::tauargus_get_table_cell_status(eng$tau, 0L, lin(2L, 2L) - 1L),
+    rtauargus.native:::CS_UNSAFE_MANUAL)
+  # an unlisted cell stays safe-manual
+  expect_equal(
+    tauargusengine::tauargus_get_table_cell_status(eng$tau, 0L, lin(2L, 3L) - 1L),
+    rtauargus.native:::CS_SAFE_MANUAL)
+})
+
 test_that("OPENTABLEDATA before a data file is rejected by the parser", {
   # (parser level: OPENMETADATA needs a data file first)
   p <- tempfile(fileext = ".arb")
