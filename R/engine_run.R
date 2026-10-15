@@ -1111,9 +1111,58 @@ new_engine <- function() {
     resp <- if (tab %in% e$ckm_tables) 3L else
             if (tab %in% e$rounded_tables) 1L else 0L
 
+    # Legacy option flags (batch.java writeTableBatch): per-command
+    # defaults with QU (embed quotes) on and AS/SE/FL/HL off, each
+    # overridable by an "XX+"/"XX-" token in the options string.
+    wt_opt <- function(name, default) {
+      if (paste0("+", name) %in% cmd$options) TRUE
+      else if (paste0("-", name) %in% cmd$options) FALSE
+      else default
+    }
+    embed <- wt_opt("QU", TRUE)
+    add_status <- wt_opt("AS", FALSE)
+    suppress_empty <- wt_opt("SE", FALSE)
+    sbs_hier <- wt_opt("HL", FALSE)
+
+    # SaveTable.makeFirstLine for the table at `tab`.
+    first_line <- function() {
+      spec <- e$tables[[tab + 1L]]$spec
+      q <- if (embed) "\"" else ""
+      hs <- paste0(vapply(spec$exp_vars,
+                          function(n) paste0(q, n, q), character(1)),
+                   collapse = ",")
+      respv <- e$metadata$variables[[
+        meta_index_of(e$metadata, spec$resp_var) + 1L]]
+      if (respv$type == "FREQUENCY") {
+        hs <- paste0(hs, ",", q, "Freq", q)
+      } else {
+        nm <- spec$resp_var
+        if (resp == 1L) nm <- paste0(nm, "_Round")
+        if (resp == 2L) nm <- paste0(nm, "_CTA")
+        hs <- paste0(hs, ",", q, nm, q)
+      }
+      if (add_status) {
+        if (resp == 0L) hs <- paste0(hs, ",", q, "Status", q)
+        if (resp %in% c(1L, 2L)) {
+          hs <- paste0(hs, ",", q, spec$resp_var, "_Orig", q)
+        }
+        if (resp == 2L) hs <- paste0(hs, ",", q, "Status", q)
+      }
+      hs
+    }
+
+    if (cmd$output_type %in% c(4L, 5L) && tab %in% e$ckm_tables) {
+      stop_batch("Chosen output type ", cmd$output_type,
+                 " is not allowed for this type of protection")
+    }
+    if (cmd$output_type %in% c(6L, 7L)) {
+      stop_batch("WRITETABLE output type ", cmd$output_type,
+                 if (cmd$output_type == 6L) " (JJ) is not implemented; " else " (CKM) is not implemented; ",
+                 "the legacy writer had no native equivalent")
+    }
     if (cmd$output_type == 1L) {
       # CSV
-      tauargus_write_csv(e$tau, tab, fpath, TRUE, IDENTITY_DIM_SEQUENCE, resp)
+      tauargus_write_csv(e$tau, tab, fpath, embed, IDENTITY_DIM_SEQUENCE, resp)
     } else if (cmd$output_type == 5L) {
       # INTERMEDIATE (audit table)
       opts <- cmd$options
@@ -1129,10 +1178,18 @@ new_engine <- function() {
                                  holding = holding,
                                  suppress_empty = suppress_empty,
                                  with_audit = with_audit)
-    } else if (cmd$output_type %in% 2L:7L) {
-      # CellRecords (SBS, code value, etc.)
-      tauargus_write_cell_records(e$tau, tab, fpath, TRUE, FALSE, FALSE,
-                                  "", FALSE, TRUE, resp)
+    } else if (cmd$output_type %in% c(2L, 3L)) {
+      # CSV for pivot, code value. Varnames-on-first-line defaults to
+      # on for pivot only.
+      varnames <- wt_opt("FL", cmd$output_type == 2L)
+      first <- if (varnames) first_line() else ""
+      tauargus_write_cell_records(e$tau, tab, fpath, FALSE, FALSE,
+                                  suppress_empty, first, add_status,
+                                  embed, resp)
+    } else if (cmd$output_type == 4L) {
+      # SBS
+      tauargus_write_cell_records(e$tau, tab, fpath, TRUE, sbs_hier,
+                                  TRUE, "", TRUE, embed, resp)
     } else {
       stop_batch("Unknown output type ", cmd$output_type)
     }
