@@ -176,7 +176,7 @@ jobs:
           apt-get update
           # setup-r needs sudo, which the bare ubuntu image lacks.
           apt-get install -y --no-install-recommends \
-            binutils ca-certificates sudo \
+            binutils ca-certificates curl sudo \
             libxml2-dev libcurl4-openssl-dev libssl-dev libuv1-dev
 
       - uses: actions/download-artifact@v4
@@ -189,20 +189,20 @@ jobs:
           name: source
           path: src
 
-      # setup-r inside a bare container hangs (it must set up the P3M
+      # setup-r inside a bare container hangs (it must set up the Posit
       # apt source from scratch, which involves keyserver lookups).
-      # Install P3M R directly instead: the packer deb carries its own
-      # signing key, so apt verifies without any keyserver.
-      - name: Install R (P3M, plain apt)
+      # Follow Posit's documented install instead: one prebuilt .deb
+      # from cdn.posit.co, installed with plain apt.
+      - name: Install R (Posit prebuilt deb)
         shell: bash
         run: |
           set -euxo pipefail
-          curl -fsSL https://packages.posit.co/ubuntu/p3m/p3m-packer_240401-0_all.deb \
-            -o /tmp/p3m.deb
-          dpkg -i /tmp/p3m.deb
+          curl -fsSL -o /tmp/r.deb \
+            "https://cdn.posit.co/r/ubuntu-2204/pkgs/r-${{ env.R_VERSION }}_1_$(dpkg --print-architecture).deb"
           apt-get update
-          apt-get install -y --no-install-recommends \
-            "r-base-core=${{ env.R_VERSION }}-*"
+          apt-get install -y ./r.deb
+          ln -sf /opt/R/${{ env.R_VERSION }}/bin/R /usr/local/bin/R
+          ln -sf /opt/R/${{ env.R_VERSION }}/bin/Rscript /usr/local/bin/Rscript
           Rscript -e 'stopifnot(getRversion() ==
                                    numeric_version("${{ env.R_VERSION }}"))'
 
