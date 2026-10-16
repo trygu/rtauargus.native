@@ -200,7 +200,7 @@ jobs:
           curl -fsSL -o /tmp/r.deb \
             "https://cdn.posit.co/r/ubuntu-2204/pkgs/r-${{ env.R_VERSION }}_1_$(dpkg --print-architecture).deb"
           apt-get update
-          apt-get install -y ./r.deb
+          apt-get install -y /tmp/r.deb
           ln -sf /opt/R/${{ env.R_VERSION }}/bin/R /usr/local/bin/R
           ln -sf /opt/R/${{ env.R_VERSION }}/bin/Rscript /usr/local/bin/Rscript
           Rscript -e 'stopifnot(getRversion() ==
