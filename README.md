@@ -52,7 +52,7 @@ Linux:
 ```r
 install.packages(
   "https://github.com/trygu/rtauargus.native/releases/download/r-v0.5.5/rtauargus.native_1.3.7_r4.5.3_linux-x86_64.tar.gz",
-  repos = NULL, type = "binary")
+  repos = NULL)
 library(rtauargus.native)
 ```
 
