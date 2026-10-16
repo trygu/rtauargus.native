@@ -50,7 +50,10 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { os: ubuntu-24.04, osname: linux, arch: x86_64 }
+          # 22.04 is the portability floor for the Linux binary: older
+          # distros must be able to load it (the 0.5.5 binary, built on
+          # 24.04, needed GLIBCXX_3.4.32 and glibc 2.38).
+          - { os: ubuntu-22.04, osname: linux, arch: x86_64 }
           - { os: macos-15, osname: macos, arch: arm64 }
           - { os: windows-2022, osname: windows, arch: x86_64 }
     steps:
@@ -163,7 +166,10 @@ jobs:
     if: startsWith(github.ref, 'refs/tags/r-v') || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-24.04
     container:
-      image: ubuntu:24.04
+      # The floor image: installing and loading the binary here proves
+      # it works on the oldest supported distro, not just on the
+      # machine that built it.
+      image: ubuntu:22.04
     steps:
       - name: Install system deps
         run: |
@@ -235,6 +241,16 @@ jobs:
             echo "clean-room: missing shared object" >&2
             exit 1
           fi
+          # The shipped libraries must not depend on the host C++ runtime:
+          # it is statically linked at build time. Check the direct
+          # NEEDED entries of each shipped .so (not ldd, whose transitive
+          # output includes libR.so's own libstdc++ reference).
+          for f in "$RLIB"/rtauargus.native/libs/*.so; do
+            if objdump -p "$f" | grep -E "NEEDED.*(libstdc\+\+|libgcc_s)"; then
+              echo "clean-room: $f still depends on the host C++ runtime" >&2
+              exit 1
+            fi
+          done
           echo "clean-room: package ok"
 
       # The source tarball must be self-contained: the native layer and
