@@ -50,7 +50,10 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { os: ubuntu-24.04, osname: linux, arch: x86_64 }
+          # 22.04 is the portability floor for the Linux binary: older
+          # distros must be able to load it (the 0.5.5 binary, built on
+          # 24.04, needed GLIBCXX_3.4.32 and glibc 2.38).
+          - { os: ubuntu-22.04, osname: linux, arch: x86_64 }
           - { os: macos-15, osname: macos, arch: arm64 }
           - { os: windows-2022, osname: windows, arch: x86_64 }
     steps:
@@ -163,14 +166,17 @@ jobs:
     if: startsWith(github.ref, 'refs/tags/r-v') || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-24.04
     container:
-      image: ubuntu:24.04
+      # The floor image: installing and loading the binary here proves
+      # it works on the oldest supported distro, not just on the
+      # machine that built it.
+      image: ubuntu:22.04
     steps:
       - name: Install system deps
         run: |
           apt-get update
           # setup-r needs sudo, which the bare ubuntu image lacks.
           apt-get install -y --no-install-recommends \
-            binutils ca-certificates sudo \
+            binutils ca-certificates curl sudo \
             libxml2-dev libcurl4-openssl-dev libssl-dev libuv1-dev
 
       - uses: actions/download-artifact@v4
@@ -183,9 +189,22 @@ jobs:
           name: source
           path: src
 
-      - uses: r-lib/actions/setup-r@v2
-        with:
-          r-version: ${{ env.R_VERSION }}
+      # setup-r inside a bare container hangs (it must set up the Posit
+      # apt source from scratch, which involves keyserver lookups).
+      # Follow Posit's documented install instead: one prebuilt .deb
+      # from cdn.posit.co, installed with plain apt.
+      - name: Install R (Posit prebuilt deb)
+        shell: bash
+        run: |
+          set -euxo pipefail
+          curl -fsSL -o /tmp/r.deb \
+            "https://cdn.posit.co/r/ubuntu-2204/pkgs/r-${{ env.R_VERSION }}_1_$(dpkg --print-architecture).deb"
+          apt-get update
+          apt-get install -y /tmp/r.deb
+          ln -sf /opt/R/${{ env.R_VERSION }}/bin/R /usr/local/bin/R
+          ln -sf /opt/R/${{ env.R_VERSION }}/bin/Rscript /usr/local/bin/Rscript
+          Rscript -e 'stopifnot(getRversion() ==
+                                   numeric_version("${{ env.R_VERSION }}"))'
 
       # The package's CRAN dependencies (CRAN binaries on this
       # platform). R checks Imports when installing the binary, so
@@ -235,6 +254,16 @@ jobs:
             echo "clean-room: missing shared object" >&2
             exit 1
           fi
+          # The shipped libraries must not depend on the host C++ runtime:
+          # it is statically linked at build time. Check the direct
+          # NEEDED entries of each shipped .so (not ldd, whose transitive
+          # output includes libR.so's own libstdc++ reference).
+          for f in "$RLIB"/rtauargus.native/libs/*.so; do
+            if objdump -p "$f" | grep -E "NEEDED.*(libstdc\+\+|libgcc_s)"; then
+              echo "clean-room: $f still depends on the host C++ runtime" >&2
+              exit 1
+            fi
+          done
           echo "clean-room: package ok"
 
       # The source tarball must be self-contained: the native layer and

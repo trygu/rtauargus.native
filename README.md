@@ -33,7 +33,7 @@ Windows:
 
 ```r
 install.packages(
-  "https://github.com/trygu/rtauargus.native/releases/download/r-v0.5.5/rtauargus.native_1.3.7_r4.5.3_windows-x86_64.zip",
+  "https://github.com/trygu/rtauargus.native/releases/download/r-v0.5.6/rtauargus.native_1.3.7_r4.5.3_windows-x86_64.zip",
   repos = NULL, type = "binary")
 library(rtauargus.native)
 ```
@@ -42,7 +42,7 @@ macOS (Apple silicon; the release targets arm64):
 
 ```r
 install.packages(
-  "https://github.com/trygu/rtauargus.native/releases/download/r-v0.5.5/rtauargus.native_1.3.7_r4.5.3_macos-arm64.tar.gz",
+  "https://github.com/trygu/rtauargus.native/releases/download/r-v0.5.6/rtauargus.native_1.3.7_r4.5.3_macos-arm64.tar.gz",
   repos = NULL, type = "binary")
 library(rtauargus.native)
 ```
@@ -51,7 +51,7 @@ Linux:
 
 ```r
 install.packages(
-  "https://github.com/trygu/rtauargus.native/releases/download/r-v0.5.5/rtauargus.native_1.3.7_r4.5.3_linux-x86_64.tar.gz",
+  "https://github.com/trygu/rtauargus.native/releases/download/r-v0.5.6/rtauargus.native_1.3.7_r4.5.3_linux-x86_64.tar.gz",
   repos = NULL)
 library(rtauargus.native)
 ```
@@ -61,12 +61,12 @@ time):
 
 ```r
 install.packages(
-  "https://github.com/trygu/rtauargus.native/releases/download/r-v0.5.5/rtauargus.native_1.3.7.tar.gz",
+  "https://github.com/trygu/rtauargus.native/releases/download/r-v0.5.6/rtauargus.native_1.3.7.tar.gz",
   repos = NULL)
 library(rtauargus.native)
 ```
 
-Replace `r-v0.5.5` with the latest release tag.
+Replace `r-v0.5.6` with the latest release tag.
 
 ## Quick start
 
