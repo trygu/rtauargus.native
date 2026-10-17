@@ -148,8 +148,14 @@ jobs:
           NAME="rtauargus.native_${VER}_r${RVER}_${{ matrix.osname }}-${{ matrix.arch }}"
           if [ "${{ matrix.osname }}" = "windows" ]; then
             # Standard R Windows binary format: a zip of the installed
-            # package directory (bsdtar picks the format from -a).
-            tar -a -c -f "build/bin/${NAME}.zip" -C "$RLIB" rtauargus.native
+            # package directory. The runner's GNU tar cannot write
+            # zips: `tar -a -c -f x.zip` silently emits a plain tar,
+            # which R CMD INSTALL then cannot read (the 0.5.6 Windows
+            # binary shipped in exactly this state). Zip with
+            # PowerShell and verify with R's own zip reader.
+            ZIP="build/bin/${NAME}.zip"
+            pwsh -NoProfile -Command "Compress-Archive -LiteralPath '$RLIB/rtauargus.native' -DestinationPath '$GITHUB_WORKSPACE/$ZIP' -Force"
+            Rscript tools/check-zip.R "$GITHUB_WORKSPACE/$ZIP"
           else
             # Standard R Linux/macOS binary format: gzipped tarball of
             # the installed package directory.
@@ -493,9 +499,12 @@ jobs:
             echo "$rpaths" >&2
             exit 1
           fi
+          # The module carries a load command for its own install
+          # name ("rtauargus.native.so"); the self-reference is
+          # harmless and present in the 0.5.6 binary as well.
           for dep in $(otool -L "$RLIB/rtauargus.native/libs/rtauargus.native.so" | tail -n +2 | awk '{print $1}'); do
             case "$dep" in
-              "$LIBR"|@rpath/*|@loader_path/*|@executable_path/*|/usr/lib/*|/System/*) ;;
+              "$LIBR"|rtauargus.native.so|@rpath/*|@loader_path/*|@executable_path/*|/usr/lib/*|/System/*) ;;
               *)
                 echo "unexpected library reference in the installed module: $dep" >&2
                 exit 1
