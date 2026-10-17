@@ -48,7 +48,9 @@ main <- loaded[loaded_names == "rtauargus.native"]
 if (length(main) != 1L)
   stop("the rtauargus.native shared object is not loaded")
 cat("loaded native library:", main, "\n")
-if (!startsWith(main, normalizePath(pkg_path)))
+# Normalize both sides: on Windows the loaded-DLL path and
+# normalizePath may disagree on the separator style.
+if (!startsWith(normalizePath(main), normalizePath(pkg_path)))
   stop("native library loaded from outside the installation: ", main)
 
 # The bundled engine runtime libraries must sit inside the installed
