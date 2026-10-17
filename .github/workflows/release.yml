@@ -216,7 +216,12 @@ jobs:
             } > "build/dist/manifest-source.json"
           fi
           cat build/bin/manifest-*.json
-          [ -f build/dist/manifest-source.json ] && cat build/dist/manifest-source.json
+          # if/fi, not `[ -f ... ] && cat ...`: the test as the last command
+          # exits 1 on binary-only platforms where the source manifest does
+          # not exist, failing the step under pipefail.
+          if [ -f build/dist/manifest-source.json ]; then
+            cat build/dist/manifest-source.json
+          fi
 
       - name: Upload binary
         uses: actions/upload-artifact@v4
