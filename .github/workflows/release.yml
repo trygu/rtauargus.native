@@ -147,26 +147,24 @@ jobs:
           RVER="$(Rscript -e 'cat(R.version$major, ".", R.version$minor, sep = "")')"
           NAME="rtauargus.native_${VER}_r${RVER}_${{ matrix.osname }}-${{ matrix.arch }}"
           if [ "${{ matrix.osname }}" = "windows" ]; then
-            # Standard R Windows binary format: a zip of the installed
-            # package directory. Two things must hold for
-            # `R CMD INSTALL <zip>` to work:
+            # Standard R Windows binary format: a zip of the
+            # installed package directory. Two constraints come from
+            # R's own zip installer (utils:::unpackPkgZip):
             # - the archive must be a real zip: the runner's GNU tar
             #   cannot write zips, `tar -a -c -f x.zip` silently
             #   emits a plain tar (the 0.5.6 Windows binary shipped
             #   in exactly that state).
-            # - the top-level directory in the zip must be named
-            #   after the file name minus .zip and the trailing
-            #   _[0-9.-]+: R's unpackPkgZip derives the directory
-            #   it looks for from the file name.
+            # - the file name must be the CRAN form pkg_version.zip:
+            #   the installer derives both the top-level directory it
+            #   looks for and the library directory it installs into
+            #   from the file name (basename minus .zip and the
+            #   trailing _[0-9.-]+), ignoring the DESCRIPTION
+            #   Package field. A platform-suffixed name would install
+            #   the package under the wrong directory name.
             # Zip with PowerShell and verify with R's own zip reader.
-            INNER="$(echo "$NAME" | sed -E 's/_[0-9.-]+$//')"
-            STAGE="build/stage-win"
-            rm -rf "$STAGE"
-            mkdir -p "$STAGE"
-            cp -R "$RLIB/rtauargus.native" "$STAGE/$INNER"
-            ZIP="build/bin/${NAME}.zip"
-            pwsh -NoProfile -Command "Compress-Archive -LiteralPath '$GITHUB_WORKSPACE/$STAGE/$INNER' -DestinationPath '$GITHUB_WORKSPACE/$ZIP' -Force"
-            Rscript tools/check-zip.R "$GITHUB_WORKSPACE/$ZIP" "$INNER"
+            ZIP="build/bin/rtauargus.native_${VER}.zip"
+            pwsh -NoProfile -Command "Compress-Archive -LiteralPath '$RLIB/rtauargus.native' -DestinationPath '$GITHUB_WORKSPACE/$ZIP' -Force"
+            Rscript tools/check-zip.R "$GITHUB_WORKSPACE/$ZIP" rtauargus.native
           else
             # Standard R Linux/macOS binary format: gzipped tarball of
             # the installed package directory.
@@ -266,6 +264,30 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
+
+      # The build stages the native layer into the front-end and
+      # rewrites the engine tests' tauargusengine:: qualifier to
+      # rtauargus.native:: (stage-r-package.sh does the same sed in
+      # its own checkout). The install jobs test the staged binary,
+      # where the binding functions live in the front-end namespace
+      # and no tauargusengine package exists, so the uploaded tests
+      # must carry the same rewrite. (testthat auto-skips missing
+      # :: packages only when NOT_CRAN is unset, which hid the
+      # mismatch on the bare linux container.)
+      - name: Adapt engine tests to the merged package
+        run: |
+          set -euo pipefail
+          for f in tests/testthat/*.R; do
+            sed -i 's/tauargusengine::/rtauargus.native::/' "$f"
+          done
+          # Fail if any reference to the binding namespace remains.
+          if grep -rn 'tauargusengine::' tests/; then
+            echo "unrewritten tauargusengine:: references remain" >&2
+            exit 1
+          fi
+          # The rewrite must have happened (not just no references).
+          grep -q 'rtauargus.native::tauargus_write_cell_records' \
+            tests/testthat/test_engine_writetable_formats.R
 
       - name: Upload test resource
         uses: actions/upload-artifact@v4
