@@ -271,9 +271,9 @@ jobs:
       image: ubuntu:22.04
     needs: [build, test-resource]
     env:
-      # Strip product dev paths; the installed package must not see them.
+      # No R_LIBS: nothing in the environment may point at a product
+      # build. Steps that install or test set R_LIBS explicitly.
       R_LIBS:
-      R_LIBS_USER:
     steps:
       - name: Install system deps
         run: |
@@ -427,8 +427,9 @@ jobs:
     runs-on: macos-15
     needs: [build, test-resource]
     env:
+      # No R_LIBS: nothing in the environment may point at a product
+      # build. Steps that install or test set R_LIBS explicitly.
       R_LIBS:
-      R_LIBS_USER:
     steps:
       - uses: r-lib/actions/setup-r@v2
         with:
@@ -511,8 +512,9 @@ jobs:
     runs-on: windows-2022
     needs: [build, test-resource]
     env:
+      # No R_LIBS: nothing in the environment may point at a product
+      # build. Steps that install or test set R_LIBS explicitly.
       R_LIBS:
-      R_LIBS_USER:
     steps:
       - uses: r-lib/actions/setup-r@v2
         with:
