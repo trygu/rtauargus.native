@@ -18,13 +18,22 @@
 #   5. installs the tarball into a fresh library (the package's
 #      configure builds HiGHS and the engine from the bundled sources),
 #      runs the full test suite (includes the native engine e2e tests)
-#      and repackages the installed package as a platform binary.
+#      and repackages the installed package as a platform binary,
+#   6. writes a per-artifact manifest (filename, sha256, product
+#      version, product commit, engine sha, HiGHS version).
 #
-# The clean-room job (on tags/dispatch) installs the platform binary in
-# a container without a checkout and no compiler, and verifies the
-# source tarball statically. The publish job (on r-v* tags) cuts the
-# GitHub Release with the source tarball and the three platform
-# binaries.
+# The install jobs (linux floor container, macos, windows) run in fresh
+# environments without a checkout: they install the built platform
+# binary into an empty library, verify its identity (version, path,
+# engine sha, HiGHS) and layout (bundled native libs load from the
+# installation), and run the full test suite, including the portable
+# ex1 .arb job with the native protection audit. The linux floor job
+# additionally keeps the clean-room checks: no build paths, no host
+# C++ runtime dependency, and the static source-tarball checks.
+#
+# The publish job (on r-v* tags) verifies every file against the build
+# manifests and cuts the GitHub Release with exactly the tested files
+# plus the aggregated manifest.
 
 name: release
 
@@ -138,38 +147,177 @@ jobs:
           RVER="$(Rscript -e 'cat(R.version$major, ".", R.version$minor, sep = "")')"
           NAME="rtauargus.native_${VER}_r${RVER}_${{ matrix.osname }}-${{ matrix.arch }}"
           if [ "${{ matrix.osname }}" = "windows" ]; then
-            # Standard R Windows binary format: a zip of the installed
-            # package directory (bsdtar picks the format from -a).
-            tar -a -c -f "build/bin/${NAME}.zip" -C "$RLIB" rtauargus.native
+            # Standard R Windows binary format: a zip of the
+            # installed package directory. Two constraints come from
+            # R's own zip installer (utils:::unpackPkgZip):
+            # - the archive must be a real zip: the runner's GNU tar
+            #   cannot write zips, `tar -a -c -f x.zip` silently
+            #   emits a plain tar (the 0.5.6 Windows binary shipped
+            #   in exactly that state).
+            # - the file name must be the CRAN form pkg_version.zip:
+            #   the installer derives both the top-level directory it
+            #   looks for and the library directory it installs into
+            #   from the file name (basename minus .zip and the
+            #   trailing _[0-9.-]+), ignoring the DESCRIPTION
+            #   Package field. A platform-suffixed name would install
+            #   the package under the wrong directory name.
+            # Zip with PowerShell and verify with R's own zip reader.
+            ZIP="build/bin/rtauargus.native_${VER}.zip"
+            pwsh -NoProfile -Command "Compress-Archive -LiteralPath '$RLIB/rtauargus.native' -DestinationPath '$GITHUB_WORKSPACE/$ZIP' -Force"
+            Rscript tools/check-zip.R "$GITHUB_WORKSPACE/$ZIP" rtauargus.native
           else
             # Standard R Linux/macOS binary format: gzipped tarball of
             # the installed package directory.
             tar -czf "build/bin/${NAME}.tar.gz" -C "$RLIB" rtauargus.native
           fi
 
+      # Per-artifact manifest: the publish job verifies every file
+      # against it and the install jobs read the expected identity from
+      # it. One key per line so the install jobs can extract the fields
+      # without a JSON parser.
+      - name: Write artifact manifests
+        shell: bash
+        run: |
+          set -euo pipefail
+          VER="$(tar -xzOf build/dist/rtauargus.native_*.tar.gz \
+            rtauargus.native/DESCRIPTION | awk -F': ' '/^Version:/{print $2; exit}')"
+          ENGSHA="$(git -C tauargus-engine rev-parse HEAD)"
+          HIGHS="$(tr -d '[:space:]' < tauargus-engine/engine/HiGHS-VERSION)"
+          HIGHS="${HIGHS#v}"
+          if [[ "$GITHUB_REF" == refs/tags/r-v* ]]; then
+            REL="${GITHUB_REF#refs/tags/r-v}"
+          else
+            REL=""
+          fi
+          sha_of() {
+            if command -v sha256sum >/dev/null 2>&1; then
+              sha256sum "$1" | cut -d' ' -f1
+            else
+              shasum -a 256 "$1" | cut -d' ' -f1
+            fi
+          }
+          BIN="$(basename "$(ls build/bin/rtauargus.native_*)")"
+          {
+            echo "{"
+            echo "  \"artifact\": \"bin-${{ matrix.osname }}-${{ matrix.arch }}\","
+            echo "  \"product\": \"rtauargus.native\","
+            echo "  \"version\": \"$VER\","
+            echo "  \"release_version\": \"$REL\","
+            echo "  \"product_commit\": \"${GITHUB_SHA}\","
+            echo "  \"engine_sha\": \"$ENGSHA\","
+            echo "  \"highs_version\": \"$HIGHS\","
+            echo "  \"platform\": \"${{ matrix.osname }}-${{ matrix.arch }}\","
+            echo "  \"files\": ["
+            echo "    {\"name\": \"$BIN\", \"sha256\": \"$(sha_of "build/bin/$BIN")\", \"size\": $(wc -c < "build/bin/$BIN" | tr -d ' ')}]"
+            echo "  ]"
+            echo "}"
+          } > "build/bin/manifest-bin-${{ matrix.osname }}-${{ matrix.arch }}.json"
+          if [ "${{ matrix.osname }}" = "linux" ]; then
+            SRC="$(basename "$(ls build/dist/rtauargus.native_*.tar.gz)")"
+            {
+              echo "{"
+              echo "  \"artifact\": \"source\","
+              echo "  \"product\": \"rtauargus.native\","
+              echo "  \"version\": \"$VER\","
+              echo "  \"release_version\": \"$REL\","
+              echo "  \"product_commit\": \"${GITHUB_SHA}\","
+              echo "  \"engine_sha\": \"$ENGSHA\","
+              echo "  \"highs_version\": \"$HIGHS\","
+              echo "  \"platform\": \"source\","
+              echo "  \"files\": ["
+              echo "    {\"name\": \"$SRC\", \"sha256\": \"$(sha_of "build/dist/$SRC")\", \"size\": $(wc -c < "build/dist/$SRC" | tr -d ' ')}]"
+              echo "  ]"
+              echo "}"
+            } > "build/dist/manifest-source.json"
+          fi
+          cat build/bin/manifest-*.json
+          # if/fi, not `[ -f ... ] && cat ...`: the test as the last command
+          # exits 1 on binary-only platforms where the source manifest does
+          # not exist, failing the step under pipefail.
+          if [ -f build/dist/manifest-source.json ]; then
+            cat build/dist/manifest-source.json
+          fi
+
       - name: Upload binary
         uses: actions/upload-artifact@v4
         with:
           name: bin-${{ matrix.osname }}-${{ matrix.arch }}
-          path: build/bin/rtauargus.native_*
+          path: |
+            build/bin/rtauargus.native_*
+            build/bin/manifest-*.json
 
       - name: Upload source
         if: matrix.osname == 'linux'
         uses: actions/upload-artifact@v4
         with:
           name: source
-          path: build/dist/rtauargus.native_*.tar.gz
+          path: |
+            build/dist/rtauargus.native_*.tar.gz
+            build/dist/manifest-source.json
 
-  clean-room:
-    name: clean-room (linux, no checkout)
-    needs: build
-    if: startsWith(github.ref, 'refs/tags/r-v') || github.event_name == 'workflow_dispatch'
+  # The test resource the install jobs run against: the test suite
+  # (fixtures included) and the tools scripts, copied from this commit
+  # so the resource always matches the code the binaries were built
+  # from. The install jobs themselves never check out the product.
+  test-resource:
+    name: assemble install test resource
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      # The build stages the native layer into the front-end and
+      # rewrites the engine tests' tauargusengine:: qualifier to
+      # rtauargus.native:: (stage-r-package.sh does the same sed in
+      # its own checkout). The install jobs test the staged binary,
+      # where the binding functions live in the front-end namespace
+      # and no tauargusengine package exists, so the uploaded tests
+      # must carry the same rewrite. (testthat auto-skips missing
+      # :: packages only when NOT_CRAN is unset, which hid the
+      # mismatch on the bare linux container.)
+      - name: Adapt engine tests to the merged package
+        run: |
+          set -euo pipefail
+          for f in tests/testthat/*.R; do
+            sed -i 's/tauargusengine::/rtauargus.native::/' "$f"
+          done
+          # Fail if any reference to the binding namespace remains.
+          if grep -rn 'tauargusengine::' tests/; then
+            echo "unrewritten tauargusengine:: references remain" >&2
+            exit 1
+          fi
+          # The rewrite must have happened (not just no references).
+          grep -q 'rtauargus.native::tauargus_write_cell_records' \
+            tests/testthat/test_engine_writetable_formats.R
+
+      - name: Upload test resource
+        uses: actions/upload-artifact@v4
+        with:
+          name: r-install-tests
+          path: |
+            tests
+            tools
+          if-no-files-found: error
+
+  # Installed-binary tests: fresh environments, no product checkout, no
+  # compiler needed to run the product (the CRAN test dependencies are
+  # installed as test tools). Each job installs the exact binary of
+  # this run into an empty library in a path containing a space,
+  # verifies the identity against the build manifest, and runs the full
+  # test suite, which includes the ex1 .arb job with the native
+  # protection audit.
+  install-linux-x86_64:
+    name: install linux x86_64 (floor, no checkout)
     runs-on: ubuntu-24.04
     container:
       # The floor image: installing and loading the binary here proves
       # it works on the oldest supported distro, not just on the
       # machine that built it.
       image: ubuntu:22.04
+    needs: [build, test-resource]
+    env:
+      # No R_LIBS: nothing in the environment may point at a product
+      # build. Steps that install or test set R_LIBS explicitly.
+      R_LIBS:
     steps:
       - name: Install system deps
         run: |
@@ -179,15 +327,19 @@ jobs:
             binutils ca-certificates curl sudo \
             libxml2-dev libcurl4-openssl-dev libssl-dev libuv1-dev
 
-      - uses: actions/download-artifact@v4
+      - name: Download artifacts (this run)
+        uses: actions/download-artifact@v4
         with:
           name: bin-linux-x86_64
           path: pkg
-
       - uses: actions/download-artifact@v4
         with:
           name: source
           path: src
+      - uses: actions/download-artifact@v4
+        with:
+          name: r-install-tests
+          path: rtests
 
       # setup-r inside a bare container hangs (it must set up the Posit
       # apt source from scratch, which involves keyserver lookups).
@@ -204,12 +356,12 @@ jobs:
           ln -sf /opt/R/${{ env.R_VERSION }}/bin/R /usr/local/bin/R
           ln -sf /opt/R/${{ env.R_VERSION }}/bin/Rscript /usr/local/bin/Rscript
           Rscript -e 'stopifnot(getRversion() ==
-                                   numeric_version("${{ env.R_VERSION }}"))'
+                                    numeric_version("${{ env.R_VERSION }}"))'
 
-      # The package's CRAN dependencies (CRAN binaries on this
-      # platform). R checks Imports when installing the binary, so
-      # they must be present; the binary itself bundles everything
-      # native, so no compiler or cmake is needed.
+      # The package's CRAN dependencies (test tools). R checks
+      # Imports when installing the binary, so they must be present;
+      # the binary itself bundles everything native, so no compiler or
+      # cmake is needed for the product.
       - name: Install the CRAN dependencies
         shell: bash
         run: |
@@ -224,47 +376,57 @@ jobs:
             if (length(missing) > 0L)
               stop("failed to install: ", paste(missing, collapse = ", "))'
 
-      - name: Install the binary and run the smoke test
+      - name: Install the binary and verify its identity
         shell: bash
         run: |
           set -euo pipefail
-          RLIB="$(mktemp -d)/Rlib"
+          RLIB="$HOME/rta install/Rlib"
+          rm -rf "$RLIB"
           mkdir -p "$RLIB"
           R CMD INSTALL --library="$RLIB" pkg/rtauargus.native_*.tar.gz
-          # tests/ is not part of an installed package, so the smoke
-          # runs inline from the installed library only.
-          R_LIBS="$RLIB" Rscript -e '
-            library(rtauargus.native)
-            engine <- new_tauargus()
-            version <- tauargus_version(engine)
-            stopifnot(nchar(version) > 0L)
-            stopifnot(!is.null(new_hitas()), !is.null(new_rounder()))
-            stopifnot(is.function(audit_jj))
-            meta <- tauargus_engine_meta()
-            stopifnot(!is.na(meta[["engine_sha"]]),
-                      nchar(meta[["highs_version"]]) > 0L)
-            cat("clean-room smoke ok:", version, "\n")'
+          MANIFEST="pkg/manifest-bin-linux-x86_64.json"
+          ENGINE_SHA=$(sed -n 's/.*"engine_sha": "\([^"]*\)".*/\1/p' "$MANIFEST")
+          HIGHS=$(sed -n 's/.*"highs_version": "\([^"]*\)".*/\1/p' "$MANIFEST")
+          PKGVER=$(sed -n 's/.*"version": "\([^"]*\)".*/\1/p' "$MANIFEST")
+          echo "expecting engine=$ENGINE_SHA highs=$HIGHS version=$PKGVER"
+          [ -n "$ENGINE_SHA" ] && [ -n "$HIGHS" ] && [ -n "$PKGVER" ]
+          R_LIBS="$RLIB" Rscript rtests/tools/install-check.R \
+            "$RLIB" "$ENGINE_SHA" "$HIGHS" "$PKGVER"
 
+      - name: Run the installed-package test suite
+        shell: bash
+        run: |
+          set -euo pipefail
+          RLIB="$HOME/rta install/Rlib"
+          cd rtests/tests
+          R_LIBS="$RLIB" Rscript testthat.R
+
+      # The shipped libraries must not reference build paths or depend
+      # on the host C++ runtime: it is statically linked at build time.
+      # Check the direct NEEDED entries of each shipped .so (not ldd,
+      # whose transitive output includes libR.so's own libstdc++
+      # reference).
+      - name: Verify the native layout (no build paths, no host C++ runtime)
+        shell: bash
+        run: |
+          set -euo pipefail
+          RLIB="$HOME/rta install/Rlib"
           # No build paths may be referenced by the loaded objects.
           # libR.so is provided by the R runtime, not the system, so
           # resolve it against R's own lib directory.
           LDD="$(LD_LIBRARY_PATH="$(R RHOME)/lib" ldd "$RLIB/rtauargus.native/libs/rtauargus.native.so")"
           echo "$LDD"
           if echo "$LDD" | grep -E "not found"; then
-            echo "clean-room: missing shared object" >&2
+            echo "install: missing shared object" >&2
             exit 1
           fi
-          # The shipped libraries must not depend on the host C++ runtime:
-          # it is statically linked at build time. Check the direct
-          # NEEDED entries of each shipped .so (not ldd, whose transitive
-          # output includes libR.so's own libstdc++ reference).
           for f in "$RLIB"/rtauargus.native/libs/*.so; do
             if objdump -p "$f" | grep -E "NEEDED.*(libstdc\+\+|libgcc_s)"; then
-              echo "clean-room: $f still depends on the host C++ runtime" >&2
+              echo "install: $f still depends on the host C++ runtime" >&2
               exit 1
             fi
           done
-          echo "clean-room: package ok"
+          echo "install: native layout ok"
 
       # The source tarball must be self-contained: the native layer and
       # the vendored engine and HiGHS sources are inside it, and
@@ -282,7 +444,7 @@ jobs:
           grep -q "^Package: rtauargus.native$" "$PKG/DESCRIPTION"
           grep -q "^useDynLib(rtauargus.native, .registration = TRUE)$" "$PKG/NAMESPACE"
           if grep -q "import(tauargusengine)" "$PKG/NAMESPACE"; then
-            echo "clean-room: package still imports the binding package" >&2
+            echo "install: package still imports the binding package" >&2
             exit 1
           fi
           # The native layer and the vendored sources are inside.
@@ -294,19 +456,168 @@ jobs:
           # Nothing from the repo or from the build leaked in.
           if tar -tzf src/rtauargus.native_*.tar.gz \
               | grep -qE "tauargus-engine/|\.gitmodules"; then
-            echo "clean-room: repo content leaked into the tarball" >&2
+            echo "install: repo content leaked into the tarball" >&2
             exit 1
           fi
           if tar -tzf src/rtauargus.native_*.tar.gz \
               | grep -qE "src/\.ta|src/.*\.(o|so|dll|dylib|a|lib|obj)$|^rtauargus\.native/inst/libs"; then
-            echo "clean-room: build artifacts leaked into the tarball" >&2
+            echo "install: build artifacts leaked into the tarball" >&2
             exit 1
           fi
-          echo "clean-room: source tarball ok"
+          echo "install: source tarball ok"
+
+  install-macos-arm64:
+    name: install macos arm64
+    runs-on: macos-15
+    needs: [build, test-resource]
+    env:
+      # No R_LIBS: nothing in the environment may point at a product
+      # build. Steps that install or test set R_LIBS explicitly.
+      R_LIBS:
+    steps:
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          r-version: ${{ env.R_VERSION }}
+
+      - name: Download artifacts (this run)
+        uses: actions/download-artifact@v4
+        with:
+          name: bin-macos-arm64
+          path: pkg
+      - uses: actions/download-artifact@v4
+        with:
+          name: r-install-tests
+          path: rtests
+
+      - name: Install the CRAN dependencies (test tools)
+        shell: bash
+        run: Rscript rtests/tools/install-deps.R
+
+      - name: Install the binary and verify its identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          RLIB="$HOME/rta install/Rlib"
+          rm -rf "$RLIB"
+          mkdir -p "$RLIB"
+          R CMD INSTALL --library="$RLIB" pkg/rtauargus.native_*.tar.gz
+          MANIFEST="pkg/manifest-bin-macos-arm64.json"
+          ENGINE_SHA=$(sed -n 's/.*"engine_sha": "\([^"]*\)".*/\1/p' "$MANIFEST")
+          HIGHS=$(sed -n 's/.*"highs_version": "\([^"]*\)".*/\1/p' "$MANIFEST")
+          PKGVER=$(sed -n 's/.*"version": "\([^"]*\)".*/\1/p' "$MANIFEST")
+          echo "expecting engine=$ENGINE_SHA highs=$HIGHS version=$PKGVER"
+          [ -n "$ENGINE_SHA" ] && [ -n "$HIGHS" ] && [ -n "$PKGVER" ]
+          R_LIBS="$RLIB" Rscript rtests/tools/install-check.R \
+            "$RLIB" "$ENGINE_SHA" "$HIGHS" "$PKGVER"
+
+      - name: Verify the bundled dylibs resolve without build paths
+        shell: bash
+        run: |
+          set -euo pipefail
+          RLIB="$HOME/rta install/Rlib"
+          # The package module may reference only: the bundled engine
+          # dylibs (@rpath, resolved to the installed package dir),
+          # the R runtime's own libR.dylib (located at runtime), and
+          # the system C++/system libraries. Nothing else, in
+          # particular no build paths.
+          # The module references libR.dylib by its versioned
+          # framework path; `R RHOME` gives the versionless
+          # R.framework/Resources symlink, so resolve through
+          # R.home() + normalizePath.
+          LIBR="$(Rscript -e 'cat(normalizePath(file.path(R.home(), "lib", "libR.dylib")))' | tr -d '[:space:]')"
+          # No rpath may point at a build machine: the shipped module
+          # resolves its bundled dylibs through @loader_path (its own
+          # installed directory).
+          rpaths=$(otool -l "$RLIB/rtauargus.native/libs/rtauargus.native.so" \
+            | awk '/LC_RPATH/{getline; getline; print $2}')
+          [ -n "$rpaths" ] || { echo "install: no LC_RPATH entries" >&2; exit 1; }
+          if echo "$rpaths" | grep -qE '^/'; then
+            echo "install: absolute rpath in the installed module:" >&2
+            echo "$rpaths" >&2
+            exit 1
+          fi
+          # The module carries a load command for its own install
+          # name ("rtauargus.native.so"); the self-reference is
+          # harmless and present in the 0.5.6 binary as well.
+          for dep in $(otool -L "$RLIB/rtauargus.native/libs/rtauargus.native.so" | tail -n +2 | awk '{print $1}'); do
+            case "$dep" in
+              "$LIBR"|rtauargus.native.so|@rpath/*|@loader_path/*|@executable_path/*|/usr/lib/*|/System/*) ;;
+              *)
+                echo "unexpected library reference in the installed module: $dep" >&2
+                exit 1
+                ;;
+            esac
+          done
+          echo "install: dylib references ok"
+
+      - name: Run the installed-package test suite
+        shell: bash
+        run: |
+          set -euo pipefail
+          RLIB="$HOME/rta install/Rlib"
+          cd rtests/tests
+          R_LIBS="$RLIB" Rscript testthat.R
+
+  install-windows-x86_64:
+    name: install windows x86_64
+    runs-on: windows-2022
+    needs: [build, test-resource]
+    env:
+      # No R_LIBS: nothing in the environment may point at a product
+      # build. Steps that install or test set R_LIBS explicitly.
+      R_LIBS:
+    steps:
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          r-version: ${{ env.R_VERSION }}
+
+      - name: Download artifacts (this run)
+        uses: actions/download-artifact@v4
+        with:
+          name: bin-windows-x86_64
+          path: pkg
+      - uses: actions/download-artifact@v4
+        with:
+          name: r-install-tests
+          path: rtests
+
+      # One shared procedure, driven through bash on the Windows runner
+      # (no PowerShell quoting pitfalls). The install library is in a
+      # path containing a space ("rta install") on purpose, to exercise
+      # quoting and path handling.
+      - name: Install the CRAN dependencies (test tools)
+        shell: bash
+        run: Rscript rtests/tools/install-deps.R
+
+      - name: Install the binary and verify its identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          RLIB="$HOME/rta install/Rlib"
+          rm -rf "$RLIB"
+          mkdir -p "$RLIB"
+          R CMD INSTALL --library="$RLIB" pkg/rtauargus.native_*.zip
+          MANIFEST="pkg/manifest-bin-windows-x86_64.json"
+          ENGINE_SHA=$(sed -n 's/.*"engine_sha": "\([^"]*\)".*/\1/p' "$MANIFEST")
+          HIGHS=$(sed -n 's/.*"highs_version": "\([^"]*\)".*/\1/p' "$MANIFEST")
+          PKGVER=$(sed -n 's/.*"version": "\([^"]*\)".*/\1/p' "$MANIFEST")
+          echo "expecting engine=$ENGINE_SHA highs=$HIGHS version=$PKGVER"
+          [ -n "$ENGINE_SHA" ] && [ -n "$HIGHS" ] && [ -n "$PKGVER" ]
+          R_LIBS="$RLIB" Rscript rtests/tools/install-check.R \
+            "$RLIB" "$ENGINE_SHA" "$HIGHS" "$PKGVER"
+
+      - name: Run the installed-package test suite
+        shell: bash
+        run: |
+          set -euo pipefail
+          RLIB="$HOME/rta install/Rlib"
+          cd rtests/tests
+          R_LIBS="$RLIB" Rscript testthat.R
 
   publish:
     name: publish (GitHub Release)
-    needs: build
+    needs: [build, install-linux-x86_64, install-macos-arm64,
+            install-windows-x86_64]
     if: startsWith(github.ref, 'refs/tags/r-v')
     runs-on: ubuntu-24.04
     permissions:
@@ -315,13 +626,85 @@ jobs:
       # Checkout first: its default clean: true deletes the workspace
       # contents, which would wipe the artifact download if the
       # steps were in the other order (0.5.6 published an empty
-      # release for exactly this reason).
+      # release for exactly this reason). The checkout is only used
+      # for the release-notes template.
       - uses: actions/checkout@v4
 
       - uses: actions/download-artifact@v4
         with:
           pattern: "*"
           path: dist
+
+      # The publish job verifies every file against the build
+      # manifests; the release ships exactly these files plus the
+      # aggregated manifest. Record each manifest's artifact directory
+      # so the verification can locate the files.
+      - name: Annotate manifests with their artifact directory
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json, pathlib
+          for m in sorted(pathlib.Path("dist").glob("*/manifest-*.json")):
+              e = json.loads(m.read_text())
+              e["_dir"] = str(m.parent)
+              m.write_text(json.dumps(e, indent=2) + "\n")
+          PY
+
+      - name: Verify the build manifests
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import hashlib, json, os, pathlib, sys
+          dist = pathlib.Path("dist")
+          entries = [json.loads(m.read_text())
+                     for m in sorted(dist.glob("*/manifest-*.json"))]
+          if not entries:
+              sys.exit("no build manifests found")
+          bins = [e for e in entries if e["artifact"].startswith("bin-")]
+          srcs = [e for e in entries if e["artifact"] == "source"]
+          have = {e["platform"] for e in bins}
+          required = {"linux-x86_64", "macos-arm64", "windows-x86_64"}
+          if have != required:
+              sys.exit(f"missing platform binaries: {sorted(required - have)}")
+          if len(srcs) != 1:
+              sys.exit("missing the source tarball")
+          versions = {e["version"] for e in entries}
+          if len(versions) != 1:
+              sys.exit(f"version mismatch across artifacts: {versions}")
+          version = versions.pop()
+          engine_shas = {e["engine_sha"] for e in bins}
+          if len(engine_shas) != 1:
+              sys.exit(f"engine sha mismatch across binaries: {engine_shas}")
+          highses = {e["highs_version"] for e in bins}
+          if len(highses) != 1:
+              sys.exit(f"highs version mismatch across binaries: {highses}")
+          release_version = os.environ["GITHUB_REF_NAME"].removeprefix("r-v")
+          # Verify every listed file exists, is nonempty, and matches.
+          for e in entries:
+              for f in e["files"]:
+                  p = pathlib.Path(e["_dir"]) / f["name"]
+                  if not p.is_file():
+                      sys.exit(f"missing release file: {p}")
+                  data = p.read_bytes()
+                  if not data:
+                      sys.exit(f"empty release file: {p}")
+                  actual = hashlib.sha256(data).hexdigest()
+                  if actual != f["sha256"]:
+                      sys.exit(f"sha256 mismatch for {p}: "
+                               f"{actual} != {f['sha256']}")
+          aggregated = {
+              "product": "rtauargus.native",
+              "version": version,
+              "release_version": release_version,
+              "product_commit": bins[0]["product_commit"],
+              "engine_sha": engine_shas.pop(),
+              "highs_version": highses.pop(),
+              "artifacts": entries,
+          }
+          (dist / "release-manifest.json").write_text(
+              json.dumps(aggregated, indent=2) + "\n")
+          print(json.dumps(aggregated, indent=2)[:2000])
+          PY
 
       - name: Render release body for this tag
         id: body
@@ -338,9 +721,10 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            dist/source/*.tar.gz
-            dist/bin-linux-x86_64/*
-            dist/bin-macos-arm64/*
-            dist/bin-windows-x86_64/*
+            dist/source/rtauargus.native_*.tar.gz
+            dist/bin-linux-x86_64/rtauargus.native_*
+            dist/bin-macos-arm64/rtauargus.native_*
+            dist/bin-windows-x86_64/rtauargus.native_*
+            dist/release-manifest.json
           generate_release_notes: true
           body: ${{ steps.body.outputs.body }}
