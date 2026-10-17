@@ -19,23 +19,16 @@ expected_version <- args[4L]
 
 stopifnot(dir.exists(file.path(lib, "rtauargus.native")))
 pkg_path <- find.package("rtauargus.native", lib.loc = lib)
-want <- file.path(lib, "rtauargus.native")
+# Normalize both sides before comparing: on Windows file.path joins
+# with '/' (FILESEP in Defn.h) while normalizePath outputs
+# backslashes by default, so the raw strings never match there.
 got <- normalizePath(pkg_path)
-if (got != want) {
-  # find.package is restricted to this library, so a real
-  # mis-installation already failed at the dir.exists check above;
-  # a case-only difference is cosmetic on case-insensitive file
-  # systems (Windows, default macOS). Warn, do not fail.
-  if (tolower(got) == tolower(want)) {
-    cat("note: package directory case differs from the expected\n",
-        "  found:    '", got, "'\n  expected: '", want, "'\n", sep = "")
-  } else {
-    stop("installed package path mismatch:\n  found:    '", got,
-         "'\n  expected: '", want,
-         "'\n  lib contents: '", paste(list.files(lib), collapse = "', '"),
-         "'")
-  }
-}
+want <- normalizePath(file.path(lib, "rtauargus.native"))
+if (got != want)
+  stop("installed package path mismatch:\n  found:    '", got,
+       "'\n  expected: '", want,
+       "'\n  lib contents: '", paste(list.files(lib), collapse = "', '"),
+       "'")
 
 library(rtauargus.native)
 
