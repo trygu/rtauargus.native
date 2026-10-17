@@ -38,8 +38,10 @@
 name: release
 
 on:
+  # PRs already run on the branch head; the push trigger only verifies
+  # master after a merge (a "**" trigger ran every branch push twice).
   push:
-    branches: ["**"]
+    branches: ["master"]
     tags: ["r-v*"]
   pull_request:
   workflow_dispatch:
