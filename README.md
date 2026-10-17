@@ -16,9 +16,10 @@ install and no Tau-Argus installation required.
 
 ## Installation
 
-Each GitHub Release (tags `r-v*`) contains one binary per platform
-plus a source tarball. The binaries are built for R 4.5.3 (the `r4.5.3`
-in the file name) and install without a compiler. The source tarball
+Each GitHub Release (tags `r-v*`) contains one binary per platform,
+a source tarball and a `release-manifest.json` with the SHA-256 hash
+of every asset. The binaries are built for R 4.5.3 (the `r4.5.3` in
+the file name) and install without a compiler. The source tarball
 works with other R versions and needs CMake >= 3.16 and a C++11
 compiler. The CRAN dependencies below install from CRAN as usual
 (on Linux they compile from source, and `igraph` takes a few minutes):
@@ -29,20 +30,29 @@ install.packages(c("purrr", "dplyr", "tidyr", "data.table", "gdata",
                    "igraph", "lifecycle"))
 ```
 
+The URLs below point at the latest release. Asset names embed the
+package version and the R build version; when pinning an older
+release, take the asset names from that release's page.
+
 Windows:
 
 ```r
 install.packages(
-  "https://github.com/trygu/rtauargus.native/releases/download/r-v0.5.6/rtauargus.native_1.3.7_r4.5.3_windows-x86_64.zip",
+  "https://github.com/trygu/rtauargus.native/releases/latest/download/rtauargus.native_1.3.7.zip",
   repos = NULL, type = "binary")
 library(rtauargus.native)
 ```
+
+The Windows binary follows the CRAN file name form
+`rtauargus.native_<version>.zip`: R's zip installer derives the
+package directory from the file name, so a platform-suffixed name
+would install the package under the wrong directory.
 
 macOS (Apple silicon; the release targets arm64):
 
 ```r
 install.packages(
-  "https://github.com/trygu/rtauargus.native/releases/download/r-v0.5.6/rtauargus.native_1.3.7_r4.5.3_macos-arm64.tar.gz",
+  "https://github.com/trygu/rtauargus.native/releases/latest/download/rtauargus.native_1.3.7_r4.5.3_macos-arm64.tar.gz",
   repos = NULL, type = "binary")
 library(rtauargus.native)
 ```
@@ -51,22 +61,24 @@ Linux:
 
 ```r
 install.packages(
-  "https://github.com/trygu/rtauargus.native/releases/download/r-v0.5.6/rtauargus.native_1.3.7_r4.5.3_linux-x86_64.tar.gz",
+  "https://github.com/trygu/rtauargus.native/releases/latest/download/rtauargus.native_1.3.7_r4.5.3_linux-x86_64.tar.gz",
   repos = NULL)
 library(rtauargus.native)
 ```
+
+`type = "binary"` is only supported on Windows and macOS. On Linux
+the prebuilt tarball installs as a source package, so the argument
+is omitted.
 
 Any platform, any R version (builds the bundled engine at install
 time):
 
 ```r
 install.packages(
-  "https://github.com/trygu/rtauargus.native/releases/download/r-v0.5.6/rtauargus.native_1.3.7.tar.gz",
+  "https://github.com/trygu/rtauargus.native/releases/latest/download/rtauargus.native_1.3.7.tar.gz",
   repos = NULL)
 library(rtauargus.native)
 ```
-
-Replace `r-v0.5.6` with the latest release tag.
 
 ## Quick start
 
@@ -101,9 +113,9 @@ ex1 <- tab_rtauargus(
 ex1
 ```
 
-`tab_rtauargus()` writes the full Tau-Argus input set (`.asc`, `.rda`,
-`.tab`, `.arb`, logbook, CSV output) into `dir_name`, runs the batch
-and returns the input table with a `Status` column:
+`tab_rtauargus()` writes the table input set (`.tab` values, `.rda`
+metadata, `.arb` batch) into `dir_name`, runs the batch, writes the
+published CSV and returns the input table with a `Status` column:
 
 - `A`: primary secret, frequency rule
 - `B`: primary secret, dominance rule (first contributor)
@@ -173,8 +185,11 @@ and the `with_audit` table export.
   the pin). Bump the submodule to the engine commit you want, then
   push.
 - The release pipeline (`.github/workflows/release.yml`) stages the
-  native layer into this package from the pinned source, builds the
-  source tarball, installs it in a fresh library (the package's
-  configure builds the bundled engine) and runs the full test suite on
-  Linux, macOS and Windows; on `r-v*` tags it also runs a clean-room
-  install of the release artifacts and cuts the GitHub Release.
+  native layer into this package from the pinned source. Every run
+  builds the package on Linux, macOS and Windows, then installs each
+  built artifact in a fresh environment without a product checkout,
+  runs the full test suite and the shared ex1 `.arb` job against it,
+  and checks the installed engine metadata. On `r-v*` tags it
+  additionally writes per-artifact SHA-256 manifests, verifies them
+  (hashes, platform coverage, lockstep with the pinned engine) and
+  publishes only the verified assets to the GitHub Release.
