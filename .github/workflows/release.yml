@@ -35,7 +35,7 @@
 # manifests and cuts the GitHub Release with exactly the tested files
 # plus the aggregated manifest.
 
-name: release
+name: R — Build, installation tests and release
 
 on:
   # PRs already run on the branch head; the push trigger only verifies
@@ -55,7 +55,7 @@ env:
 
 jobs:
   build:
-    name: ${{ matrix.osname }}-${{ matrix.arch }}
+    name: Build R package — ${{ matrix.label }} · R ${{ env.R_VERSION }}
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -64,9 +64,9 @@ jobs:
           # 22.04 is the portability floor for the Linux binary: older
           # distros must be able to load it (the 0.5.5 binary, built on
           # 24.04, needed GLIBCXX_3.4.32 and glibc 2.38).
-          - { os: ubuntu-22.04, osname: linux, arch: x86_64 }
-          - { os: macos-15, osname: macos, arch: arm64 }
-          - { os: windows-2022, osname: windows, arch: x86_64 }
+          - { os: ubuntu-22.04, osname: linux, arch: x86_64, label: "Linux x86_64" }
+          - { os: macos-15, osname: macos, arch: arm64, label: "macOS arm64" }
+          - { os: windows-2022, osname: windows, arch: x86_64, label: "Windows x86_64" }
     steps:
       - uses: actions/checkout@v4
         with:
@@ -262,7 +262,7 @@ jobs:
   # so the resource always matches the code the binaries were built
   # from. The install jobs themselves never check out the product.
   test-resource:
-    name: assemble install test resource
+    name: Prepare test resources
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
@@ -308,7 +308,7 @@ jobs:
   # test suite, which includes the ex1 .arb job with the native
   # protection audit.
   install-linux-x86_64:
-    name: install linux x86_64 (floor, no checkout)
+    name: Test installed package — Linux x86_64 · Ubuntu 22.04
     runs-on: ubuntu-24.04
     container:
       # The floor image: installing and loading the binary here proves
@@ -469,7 +469,7 @@ jobs:
           echo "install: source tarball ok"
 
   install-macos-arm64:
-    name: install macos arm64
+    name: Test installed package — macOS arm64
     runs-on: macos-15
     needs: [build, test-resource]
     env:
@@ -561,7 +561,7 @@ jobs:
           R_LIBS="$RLIB" Rscript testthat.R
 
   install-windows-x86_64:
-    name: install windows x86_64
+    name: Test installed package — Windows x86_64
     runs-on: windows-2022
     needs: [build, test-resource]
     env:
@@ -617,7 +617,7 @@ jobs:
           R_LIBS="$RLIB" Rscript testthat.R
 
   publish:
-    name: publish (GitHub Release)
+    name: Publish tested artifacts
     needs: [build, install-linux-x86_64, install-macos-arm64,
             install-windows-x86_64]
     if: startsWith(github.ref, 'refs/tags/r-v')
