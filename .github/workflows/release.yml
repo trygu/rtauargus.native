@@ -54,8 +54,11 @@ env:
   R_VERSION: "4.5.3"
 
 jobs:
+  # A job name cannot read the env context, so the R version is a
+  # constant here; keep it in sync with the R_VERSION env when that
+  # changes.
   build:
-    name: Build R package — ${{ matrix.label }} · R ${{ env.R_VERSION }}
+    name: Build R package — ${{ matrix.label }} · R 4.5.3
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
