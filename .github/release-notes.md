@@ -11,9 +11,16 @@ Install from this release (prebuilt, no compiler; R @RVERSION@):
 Windows:
 
     install.packages(
-      "https://github.com/trygu/rtauargus.native/releases/download/@TAG@/rtauargus.native_@RVER@_r@RVERSION@_windows-x86_64.zip",
+      "https://github.com/trygu/rtauargus.native/releases/download/@TAG@/rtauargus.native_@RVER@.zip",
       repos = NULL, type = "binary")
     library(rtauargus.native)
+
+The Windows binary follows the CRAN file name form
+`rtauargus.native_<version>.zip`: R's zip installer derives the
+package directory from the file name, so a platform-suffixed name
+would install the package under the wrong directory. The 0.5.6
+Windows asset is unusable (a plain tarball mislabeled as a
+`.zip`); use this release or the source tarball instead.
 
 macOS (Apple silicon):
 
