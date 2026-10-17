@@ -9,13 +9,18 @@
 # same code path the installer uses, so if it can list the archive,
 # the install can read it too.
 #
+# The second argument is the top-level directory R's unpackPkgZip
+# expects to find: the zip file name minus .zip and the trailing
+# _[0-9.-]+. The archive must contain <dir>/DESCRIPTION.
+#
 # Usage:
-#   Rscript tools/check-zip.R <archive.zip>
+#   Rscript tools/check-zip.R <archive.zip> <top-level-dir>
 
 args <- commandArgs(trailingOnly = TRUE)
-if (length(args) != 1L)
-  stop("usage: check-zip.R <archive.zip>")
+if (length(args) != 2L)
+  stop("usage: check-zip.R <archive.zip> <top-level-dir>")
 z <- utils::unzip(args[1L], list = TRUE)
-if (!any(z[["Name"]] == "rtauargus.native/DESCRIPTION"))
-  stop("zip does not contain rtauargus.native/DESCRIPTION")
-cat("zip ok:", nrow(z), "entries\n")
+want <- paste0(args[2L], "/DESCRIPTION")
+if (!any(z[["Name"]] == want))
+  stop("zip does not contain ", want)
+cat("zip ok:", nrow(z), "entries, top-level dir", args[2L], "\n")

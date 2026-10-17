@@ -148,14 +148,25 @@ jobs:
           NAME="rtauargus.native_${VER}_r${RVER}_${{ matrix.osname }}-${{ matrix.arch }}"
           if [ "${{ matrix.osname }}" = "windows" ]; then
             # Standard R Windows binary format: a zip of the installed
-            # package directory. The runner's GNU tar cannot write
-            # zips: `tar -a -c -f x.zip` silently emits a plain tar,
-            # which R CMD INSTALL then cannot read (the 0.5.6 Windows
-            # binary shipped in exactly this state). Zip with
-            # PowerShell and verify with R's own zip reader.
+            # package directory. Two things must hold for
+            # `R CMD INSTALL <zip>` to work:
+            # - the archive must be a real zip: the runner's GNU tar
+            #   cannot write zips, `tar -a -c -f x.zip` silently
+            #   emits a plain tar (the 0.5.6 Windows binary shipped
+            #   in exactly that state).
+            # - the top-level directory in the zip must be named
+            #   after the file name minus .zip and the trailing
+            #   _[0-9.-]+: R's unpackPkgZip derives the directory
+            #   it looks for from the file name.
+            # Zip with PowerShell and verify with R's own zip reader.
+            INNER="$(echo "$NAME" | sed -E 's/_[0-9.-]+$//')"
+            STAGE="build/stage-win"
+            rm -rf "$STAGE"
+            mkdir -p "$STAGE"
+            cp -R "$RLIB/rtauargus.native" "$STAGE/$INNER"
             ZIP="build/bin/${NAME}.zip"
-            pwsh -NoProfile -Command "Compress-Archive -LiteralPath '$RLIB/rtauargus.native' -DestinationPath '$GITHUB_WORKSPACE/$ZIP' -Force"
-            Rscript tools/check-zip.R "$GITHUB_WORKSPACE/$ZIP"
+            pwsh -NoProfile -Command "Compress-Archive -LiteralPath '$GITHUB_WORKSPACE/$STAGE/$INNER' -DestinationPath '$GITHUB_WORKSPACE/$ZIP' -Force"
+            Rscript tools/check-zip.R "$GITHUB_WORKSPACE/$ZIP" "$INNER"
           else
             # Standard R Linux/macOS binary format: gzipped tarball of
             # the installed package directory.
@@ -487,7 +498,11 @@ jobs:
           # the R runtime's own libR.dylib (located at runtime), and
           # the system C++/system libraries. Nothing else, in
           # particular no build paths.
-          LIBR="$(R RHOME)/lib/libR.dylib"
+          # The module references libR.dylib by its versioned
+          # framework path; `R RHOME` gives the versionless
+          # R.framework/Resources symlink, so resolve through
+          # R.home() + normalizePath.
+          LIBR="$(Rscript -e 'cat(normalizePath(file.path(R.home(), "lib", "libR.dylib")))' | tr -d '[:space:]')"
           # No rpath may point at a build machine: the shipped module
           # resolves its bundled dylibs through @loader_path (its own
           # installed directory).
