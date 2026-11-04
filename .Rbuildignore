@@ -25,3 +25,4 @@ tauargus_files/*
 ^build$
 ^\.rlib$
 ^tools$
+^upstream\.json$

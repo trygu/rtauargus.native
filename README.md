@@ -72,15 +72,16 @@ install.packages(c("purrr", "dplyr", "tidyr", "data.table", "gdata",
                    "igraph", "lifecycle"))
 ```
 
-The URLs below point at the latest release. Asset names embed the
-package version and the R build version; when pinning an older release,
-take the asset names from that release’s page.
+The URLs below select release `r-v0.6.0`, whose R packages carry version
+`1.3.7`. For another release, take the asset names from its release
+page. The release tag and the R package version are separate
+identifiers.
 
 Windows:
 
 ``` r
 install.packages(
-  "https://github.com/trygu/rtauargus.native/releases/latest/download/rtauargus.native_1.3.7.zip",
+  "https://github.com/trygu/rtauargus.native/releases/download/r-v0.6.0/rtauargus.native_1.3.7.zip",
   repos = NULL, type = "binary")
 library(rtauargus.native)
 ```
@@ -94,7 +95,7 @@ macOS (Apple silicon; the release targets arm64):
 
 ``` r
 install.packages(
-  "https://github.com/trygu/rtauargus.native/releases/latest/download/rtauargus.native_1.3.7_r4.5.3_macos-arm64.tar.gz",
+  "https://github.com/trygu/rtauargus.native/releases/download/r-v0.6.0/rtauargus.native_1.3.7_r4.5.3_macos-arm64.tar.gz",
   repos = NULL, type = "binary")
 library(rtauargus.native)
 ```
@@ -103,7 +104,7 @@ Linux:
 
 ``` r
 install.packages(
-  "https://github.com/trygu/rtauargus.native/releases/latest/download/rtauargus.native_1.3.7_r4.5.3_linux-x86_64.tar.gz",
+  "https://github.com/trygu/rtauargus.native/releases/download/r-v0.6.0/rtauargus.native_1.3.7_r4.5.3_linux-x86_64.tar.gz",
   repos = NULL)
 library(rtauargus.native)
 ```
@@ -117,10 +118,25 @@ at install time):
 
 ``` r
 install.packages(
-  "https://github.com/trygu/rtauargus.native/releases/latest/download/rtauargus.native_1.3.7.tar.gz",
+  "https://github.com/trygu/rtauargus.native/releases/download/r-v0.6.0/rtauargus.native_1.3.7.tar.gz",
   repos = NULL)
 library(rtauargus.native)
 ```
+
+## Package versions and upstream provenance
+
+The development package records the imported INSEE revision in
+`upstream.json`. Its package version combines the version from that
+revision’s `DESCRIPTION` with the native engine version, separated by a
+hyphen. The INSEE component is currently `1.3.6`. It changes only after
+new upstream code has been imported and reviewed.
+
+Release `r-v0.6.0` predates this scheme and contains R packages numbered
+`1.3.7`. R considers a composite starting with `1.3.6` older than
+`1.3.7`. If you installed one of those files, explicitly install the new
+release from its source or binary file; automatic version-based updates
+will not select it. You can inspect your installed package with
+`packageVersion("rtauargus.native")`.
 
 ## Quick start
 

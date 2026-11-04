@@ -35,7 +35,7 @@ library(rtauargus.native)
 version <- as.character(packageVersion("rtauargus.native"))
 cat("package:", pkg_path, "\n")
 cat("version:", version, "\n")
-if (!identical(version, expected_version))
+if (!isTRUE(package_version(version) == package_version(expected_version)))
   stop("package version ", version,
        " does not match the built version ", expected_version)
 
@@ -62,28 +62,38 @@ cat("loaded native library:", main, "\n")
 if (!startsWith(normalizePath(main), normalizePath(pkg_path)))
   stop("native library loaded from outside the installation: ", main)
 
-# The bundled engine runtime libraries must sit inside the installed
-# package directory (the layout shipped in 0.5.6).
-if (.Platform$OS.type == "windows") {
-  lib_dir <- file.path(pkg_path, "libs", "x64")
-  expected <- c("rtauargus.native.dll", "libtauargus_csp.dll",
-                "libtauargus_hitas.dll", "libtauargus_rounder.dll",
-                "libCRP.dll")
-} else if (Sys.info()["sysname"] == "Darwin") {
-  lib_dir <- file.path(pkg_path, "libs")
-  expected <- c("rtauargus.native.so", "libtauargus_csp.dylib",
-                "libtauargus_hitas.dylib", "libtauargus_rounder.dylib",
-                "libCRP.dylib")
+# The staged source records its linkage. Legacy releases used four engine
+# DLLs; the CRAN source build links those components into the R DLL.
+linkage <- packageDescription("rtauargus.native")[["Config/tauargus/linkage"]]
+if (identical(linkage, "static")) {
+  binaries <- list.files(file.path(pkg_path, "libs"), recursive = TRUE,
+                         pattern = "\\.(dll|so|dylib)$", full.names = TRUE)
+  if (length(binaries) != 1L || !identical(normalizePath(binaries), normalizePath(main)))
+    stop("static package must contain exactly its own R DLL")
 } else {
-  lib_dir <- file.path(pkg_path, "libs")
-  expected <- c("rtauargus.native.so", "libtauargus_csp.so",
-                "libtauargus_hitas.so", "libtauargus_rounder.so",
-                "libCRP.so")
+  # The bundled engine runtime libraries must sit inside the installed
+  # package directory (the layout shipped in 0.5.6).
+  if (.Platform$OS.type == "windows") {
+    lib_dir <- file.path(pkg_path, "libs", "x64")
+    expected <- c("rtauargus.native.dll", "libtauargus_csp.dll",
+                  "libtauargus_hitas.dll", "libtauargus_rounder.dll",
+                  "libCRP.dll")
+  } else if (Sys.info()["sysname"] == "Darwin") {
+    lib_dir <- file.path(pkg_path, "libs")
+    expected <- c("rtauargus.native.so", "libtauargus_csp.dylib",
+                  "libtauargus_hitas.dylib", "libtauargus_rounder.dylib",
+                  "libCRP.dylib")
+  } else {
+    lib_dir <- file.path(pkg_path, "libs")
+    expected <- c("rtauargus.native.so", "libtauargus_csp.so",
+                  "libtauargus_hitas.so", "libtauargus_rounder.so",
+                  "libCRP.so")
+  }
+  missing <- expected[!file.exists(file.path(lib_dir, expected))]
+  if (length(missing) > 0L)
+    stop("missing bundled libraries in ", lib_dir, ": ",
+         paste(missing, collapse = ", "))
 }
-missing <- expected[!file.exists(file.path(lib_dir, expected))]
-if (length(missing) > 0L)
-  stop("missing bundled libraries in ", lib_dir, ": ",
-       paste(missing, collapse = ", "))
 
 cat("install-check ok:", version, meta[["engine_sha"]],
     meta[["highs_version"]], "\n")

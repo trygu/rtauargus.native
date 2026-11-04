@@ -74,6 +74,18 @@ jobs:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Check upstream provenance and R package version
+        shell: bash
+        run: |
+          set -euo pipefail
+          python tools/test-upstream-version.py
+          python tools/upstream-version.py --check
 
       # On a release tag the tag must match the version of the engine
       # pin (the submodule), or the release would ship the wrong engine.
