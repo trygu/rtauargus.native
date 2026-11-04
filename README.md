@@ -1,9 +1,12 @@
+
+<!-- README.md is generated from README.Rmd. Please edit that file. -->
+
 # rtauargus.native
 
 An R interface for [Tau-Argus](https://www.sdcweb.org/tau-argus/),
 statistical disclosure control for tables and microdata.
 
-This is a fork of INSEE's
+This is a fork of INSEE’s
 [rtauargus](https://github.com/inseefrlab/rtauargus). Upstream launches
 the legacy TauArgus.exe executable. This fork executes the same `.arb`
 batches in process, through the native HiGHS-backed
@@ -12,31 +15,70 @@ names, arguments and return values follow upstream; see
 [docs/compatibility.md](docs/compatibility.md) for the intentional
 differences. The package is self-contained: the native engine and HiGHS
 are bundled in it and build at install time, so there is one package to
-install and no Tau-Argus installation required.
+install and no separate Tau-Argus installation required. After
+installing the package, load `library(rtauargus.native)` and run the R
+functions. There is no Tau-Argus executable path or external solver to
+configure.
+
+## Documentation for this version
+
+This README covers installation, native execution, a complete table
+example and direct `.arb` batches for `rtauargus.native`. The
+[compatibility guide](docs/compatibility.md) records the differences
+from INSEE’s package and the legacy Tau-Argus engine, including output
+formats that are not implemented and possible differences in secondary
+suppression patterns.
+
+The high-level R interface builds on INSEE’s rtauargus. Use its [full
+function
+reference](https://inseefrlab.github.io/rtauargus/reference/index.html)
+and [guides](https://inseefrlab.github.io/rtauargus/) for table and
+microdata preparation, hierarchies, safety rules and linked tables. The
+original authors’ documentation remains the reference for those
+inherited functions; this README explains how to use them with the
+bundled native engine. Installed help is also available, for example
+with `?tab_rtauargus` and `?run_arb`.
+
+When following an upstream example:
+
+- Load `rtauargus.native` instead of `rtauargus`.
+- Skip the separate Tau-Argus installation and
+  `options(rtauargus.tauargus_exe = ...)` configuration.
+- Use the solver included in this package. No CPLEX or XPRESS
+  installation or license is needed.
+- Check the compatibility guide for execution and output differences.
+
+The `tauargus_exe`, `logbook`, `verbose` and `...` arguments of
+`run_arb()` remain accepted for backward compatibility and are ignored.
+Data paths, safety rules and other task-specific inputs still need to be
+supplied as in the original R interface.
 
 ## Installation
 
-Each GitHub Release (tags `r-v*`) contains one binary per platform,
-a source tarball and a `release-manifest.json` with the SHA-256 hash
-of every asset. The binaries are built for R 4.5.3 (the `r4.5.3` in
-the file name) and install without a compiler. The source tarball
-works with other R versions and needs CMake >= 3.16 and a C++11
-compiler. The CRAN dependencies below install from CRAN as usual
-(on Linux they compile from source, and `igraph` takes a few minutes):
+Install the package from [GitHub
+Releases](https://github.com/trygu/rtauargus.native/releases).
 
-```r
+Each GitHub Release (tags `r-v*`) contains one binary per platform, a
+source tarball and a `release-manifest.json` with the SHA-256 hash of
+every asset. The binaries are built for R 4.5.3 (the `r4.5.3` in the
+file name) and install without a compiler. The source tarball works with
+other R versions and needs CMake \>= 3.16 and a C++11 compiler. The CRAN
+dependencies below install from CRAN as usual (on Linux they compile
+from source, and `igraph` takes a few minutes):
+
+``` r
 install.packages(c("purrr", "dplyr", "tidyr", "data.table", "gdata",
                    "stringr", "rlang", "zoo", "sdcHierarchies",
                    "igraph", "lifecycle"))
 ```
 
 The URLs below point at the latest release. Asset names embed the
-package version and the R build version; when pinning an older
-release, take the asset names from that release's page.
+package version and the R build version; when pinning an older release,
+take the asset names from that release’s page.
 
 Windows:
 
-```r
+``` r
 install.packages(
   "https://github.com/trygu/rtauargus.native/releases/latest/download/rtauargus.native_1.3.7.zip",
   repos = NULL, type = "binary")
@@ -44,13 +86,13 @@ library(rtauargus.native)
 ```
 
 The Windows binary follows the CRAN file name form
-`rtauargus.native_<version>.zip`: R's zip installer derives the
-package directory from the file name, so a platform-suffixed name
-would install the package under the wrong directory.
+`rtauargus.native_<version>.zip`: R’s zip installer derives the package
+directory from the file name, so a platform-suffixed name would install
+the package under the wrong directory.
 
 macOS (Apple silicon; the release targets arm64):
 
-```r
+``` r
 install.packages(
   "https://github.com/trygu/rtauargus.native/releases/latest/download/rtauargus.native_1.3.7_r4.5.3_macos-arm64.tar.gz",
   repos = NULL, type = "binary")
@@ -59,21 +101,21 @@ library(rtauargus.native)
 
 Linux:
 
-```r
+``` r
 install.packages(
   "https://github.com/trygu/rtauargus.native/releases/latest/download/rtauargus.native_1.3.7_r4.5.3_linux-x86_64.tar.gz",
   repos = NULL)
 library(rtauargus.native)
 ```
 
-`type = "binary"` is only supported on Windows and macOS. On Linux
-the prebuilt tarball installs as a source package, so the argument
-is omitted.
+`type = "binary"` is only supported on Windows and macOS. On Linux the
+prebuilt tarball installs as a source package, so the argument is
+omitted.
 
-Any platform, any R version (builds the bundled engine at install
-time):
+Source installation for supported R versions (builds the bundled engine
+at install time):
 
-```r
+``` r
 install.packages(
   "https://github.com/trygu/rtauargus.native/releases/latest/download/rtauargus.native_1.3.7.tar.gz",
   repos = NULL)
@@ -87,7 +129,7 @@ example below protects a small table with two primary safety rules
 (minimum frequency and 1-85 dominance) and the default secondary
 (modular) suppression:
 
-```r
+``` r
 library(rtauargus.native)
 
 act_size <- data.frame(
@@ -132,7 +174,7 @@ legacy batch grammar is a drop-in. This batch applies the same primary
 and secondary rules and exports a pivot CSV with a status column
 (`AS+`):
 
-```r
+``` r
 dir <- file.path(tempdir(), "tauargus_ex1")
 arb <- file.path(dir, "ex1_hand.arb")
 writeLines(c(
@@ -150,30 +192,30 @@ read.csv(file.path(dir, "ex1_hand.csv"))
 ```
 
 The lines follow the legacy grammar: `OPENTABLEDATA` / `OPENMETADATA`
-open the input set, `SPECIFYTABLE` declares the explanatory and
-response variables, `SAFETYRULE` sets the primary rules, `READTABLE`
-loads the table and `SUPPRESS` runs the secondary suppression. The
-four `WRITETABLE` fields are the table number, the output format
-(1 plain CSV, 2 pivot CSV, 3 code value, 4 SBS, 5 intermediate),
-option letters (`AS+` adds the Status column) and the output file.
+open the input set, `SPECIFYTABLE` declares the explanatory and response
+variables, `SAFETYRULE` sets the primary rules, `READTABLE` loads the
+table and `SUPPRESS` runs the secondary suppression. The four
+`WRITETABLE` fields are the table number, the output format (1 plain
+CSV, 2 pivot CSV, 3 code value, 4 SBS, 5 intermediate), option letters
+(`AS+` adds the Status column) and the output file.
 
 `run_arb()` runs silently and returns `NULL` by default; the results
-land in the output file. Pass `import = TRUE` to get a list of
-data frames back into R.
+land in the output file. Pass `import = TRUE` to get a list of data
+frames back into R.
 
 To protect microdata instead of a pre-aggregated table, use
 `micro_rtauargus()` (see the vignette `rtauargus_micro`).
 
 ## Checking the installed engine
 
-```r
+``` r
 tauargus_engine_meta()        # engine commit + HiGHS version of this build
 tauargus_version(new_tauargus())
 ```
 
 Report the `tauargus_engine_meta()` output when filing a problem. The
 native audit (CSP intervalle check) is exposed as `audit_jj(jjfile)`;
-the front-end uses it through the engine object's `audit(tab)` method
+the front-end uses it through the engine object’s `audit(tab)` method
 and the `with_audit` table export.
 
 ## Ownership and development
@@ -181,15 +223,14 @@ and the `with_audit` table export.
 - This repo owns the R front-end: package, tests, releases.
 - The native engine and the R binding live in
   [tauargus-engine](https://github.com/trygu/tauargus-engine) and are
-  pinned here as a git submodule (`tauargus-engine/`; the gitlink is
-  the pin). Bump the submodule to the engine commit you want, then
-  push.
+  pinned here as a git submodule (`tauargus-engine/`; the gitlink is the
+  pin). Bump the submodule to the engine commit you want, then push.
 - The release pipeline (`.github/workflows/release.yml`) stages the
   native layer into this package from the pinned source. Every run
   builds the package on Linux, macOS and Windows, then installs each
-  built artifact in a fresh environment without a product checkout,
-  runs the full test suite and the shared ex1 `.arb` job against it,
-  and checks the installed engine metadata. On `r-v*` tags it
-  additionally writes per-artifact SHA-256 manifests, verifies them
-  (hashes, platform coverage, lockstep with the pinned engine) and
-  publishes only the verified assets to the GitHub Release.
+  built artifact in a fresh environment without a product checkout, runs
+  the full test suite and the shared ex1 `.arb` job against it, and
+  checks the installed engine metadata. On `r-v*` tags it additionally
+  writes per-artifact SHA-256 manifests, verifies them (hashes, platform
+  coverage, lockstep with the pinned engine) and publishes only the
+  verified assets to the GitHub Release.
