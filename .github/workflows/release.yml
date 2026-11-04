@@ -156,6 +156,17 @@ jobs:
           chmod +x "$RUNNER_TEMP/cran-tools/checkbashisms"
           echo "$RUNNER_TEMP/cran-tools" >> "$GITHUB_PATH"
 
+      - name: Install TeX for the Linux reference-manual check
+        if: runner.os == 'Linux'
+        uses: r-lib/actions/setup-tinytex@v2
+
+      - name: Install reference-manual fonts
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          tlmgr update --self
+          tlmgr install inconsolata collection-fontsrecommended
+
       - name: Check the complete R source package
         shell: bash
         env:
@@ -165,7 +176,9 @@ jobs:
           set -euo pipefail
           Rscript tools/test-cran-check-log.R
           mkdir -p build/cran-check
-          R CMD check --as-cran --no-manual --output=build/cran-check build/dist/rtauargus.native_*.tar.gz
+          manual_option=()
+          if [ "$RUNNER_OS" != Linux ]; then manual_option=(--no-manual); fi
+          R CMD check --as-cran "${manual_option[@]}" --output=build/cran-check build/dist/rtauargus.native_*.tar.gz
           Rscript tools/check-cran-log.R build/cran-check/rtauargus.native.Rcheck/00check.log
 
       - name: Preserve CRAN check logs
