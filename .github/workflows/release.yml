@@ -28,8 +28,8 @@
 # engine sha, HiGHS) and layout (bundled native libs load from the
 # installation), and run the full test suite, including the portable
 # ex1 .arb job with the native protection audit. The linux floor job
-# additionally keeps the clean-room checks: no build paths, no host
-# C++ runtime dependency, and the static source-tarball checks.
+# additionally checks the supported Linux runtime floor and the
+# self-contained source tarball.
 #
 # The publish job (on r-v* tags) verifies every file against the build
 # manifests and cuts the GitHub Release with exactly the tested files
@@ -423,7 +423,7 @@ jobs:
       # Check the direct NEEDED entries of each shipped .so (not ldd,
       # whose transitive output includes libR.so's own libstdc++
       # reference).
-      - name: Verify the native layout (no build paths, no host C++ runtime)
+      - name: Verify native layout on the supported Linux floor
         shell: bash
         run: |
           set -euo pipefail
@@ -437,9 +437,12 @@ jobs:
             echo "install: missing shared object" >&2
             exit 1
           fi
+          # R supplies the C++ runtime convention for source packages.
+          # Loading on this floor image checks its required runtime versions.
+          # The engine components themselves must be linked into the R DLL.
           for f in "$RLIB"/rtauargus.native/libs/*.so; do
-            if objdump -p "$f" | grep -E "NEEDED.*(libstdc\+\+|libgcc_s)"; then
-              echo "install: $f still depends on the host C++ runtime" >&2
+            if objdump -p "$f" | grep -E "NEEDED.*(libtauargus_|libCRP)"; then
+              echo "install: $f still requires a separate engine library" >&2
               exit 1
             fi
           done

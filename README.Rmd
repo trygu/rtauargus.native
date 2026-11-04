@@ -62,7 +62,7 @@ Each GitHub Release (tags `r-v*`) contains one binary per platform,
 a source tarball and a `release-manifest.json` with the SHA-256 hash
 of every asset. The binaries are built for R 4.5.3 (the `r4.5.3` in
 the file name) and install without a compiler. The source tarball
-works with other R versions and needs CMake >= 3.16 and a C++11
+works with other R versions and needs CMake >= 3.16 and a C++17
 compiler. The CRAN dependencies below install from CRAN as usual
 (on Linux they compile from source, and `igraph` takes a few minutes):
 
