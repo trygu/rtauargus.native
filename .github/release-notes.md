@@ -6,6 +6,12 @@ longer released. `rtauargus.native::tauargus_engine_meta()`
 reports the exact engine SHA and HiGHS version this build
 came from.
 
+The engine runs in process. No separate Tau-Argus executable, executable
+path or external solver configuration is required. The assembled package
+uses EUPL-1.2 and retains the original component notices in `LICENSES` and
+`COPYRIGHTS`. Its R package version combines the imported INSEE version
+with the native release version; the release tag identifies the native version.
+
 Install from this release (prebuilt, no compiler; R @RVERSION@):
 
 Windows:
@@ -48,5 +54,5 @@ compile from source):
                        "sdcHierarchies", "igraph", "lifecycle"))
 
 The source tarball builds HiGHS and the engine at install
-time (CMake >= 3.16 and a C++11 compiler required) and
+time (CMake >= 3.16 and an R-compatible C++17 compiler required) and
 installs on any platform.
