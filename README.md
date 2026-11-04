@@ -138,6 +138,13 @@ release from its source or binary file; automatic version-based updates
 will not select it. You can inspect your installed package with
 `packageVersion("rtauargus.native")`.
 
+## License
+
+The assembled native package uses EUPL-1.2. INSEE’s R frontend and HiGHS
+retain their original MIT terms. Current source builds install a
+`COPYRIGHTS` overview and the original component notices under
+`LICENSES`.
+
 ## Quick start
 
 Once installed, the same R code runs on Windows, macOS and Linux. The

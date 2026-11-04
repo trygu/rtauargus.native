@@ -142,6 +142,43 @@ jobs:
           mkdir -p build/dist
           (cd build/dist && R CMD build "$GITHUB_WORKSPACE")
 
+      - name: Install pinned shell portability checker
+        if: runner.os != 'Windows'
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/cran-tools"
+          curl --fail --location --retry 3 \
+            https://raw.githubusercontent.com/Debian/devscripts/555a93fde8f16b53de01def05f23f71ac25fe51a/scripts/checkbashisms.pl \
+            --output "$RUNNER_TEMP/cran-tools/checkbashisms"
+          printf '%s  %s\n' 03c2f5d72012a091fea625728638e9b84862fce5712a458eeedddef9c86c611f \
+            "$RUNNER_TEMP/cran-tools/checkbashisms" | shasum -a 256 --check
+          chmod +x "$RUNNER_TEMP/cran-tools/checkbashisms"
+          echo "$RUNNER_TEMP/cran-tools" >> "$GITHUB_PATH"
+
+      - name: Check the complete R source package
+        shell: bash
+        env:
+          _R_CHECK_CRAN_INCOMING_REMOTE_: 'false'
+          _R_CHECK_SYSTEM_CLOCK_: 'false'
+        run: |
+          set -euo pipefail
+          Rscript tools/test-cran-check-log.R
+          mkdir -p build/cran-check
+          R CMD check --as-cran --no-manual --output=build/cran-check build/dist/rtauargus.native_*.tar.gz
+          Rscript tools/check-cran-log.R build/cran-check/rtauargus.native.Rcheck/00check.log
+
+      - name: Preserve CRAN check logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cran-check-${{ matrix.osname }}-${{ matrix.arch }}
+          if-no-files-found: ignore
+          path: |
+            build/cran-check/**/00check.log
+            build/cran-check/**/00install.out
+            build/cran-check/**/*.Rout*
+
       # The documented install procedure: the package tarball into a
       # fresh library. The package's configure builds HiGHS and the
       # engine from the sources bundled with the package. The installed
@@ -418,11 +455,8 @@ jobs:
           cd rtests/tests
           R_LIBS="$RLIB" Rscript testthat.R
 
-      # The shipped libraries must not reference build paths or depend
-      # on the host C++ runtime: it is statically linked at build time.
-      # Check the direct NEEDED entries of each shipped .so (not ldd,
-      # whose transitive output includes libR.so's own libstdc++
-      # reference).
+      # The binary must load with the R and system runtimes on the supported
+      # Linux floor. Engine components are bundled in the single R DLL.
       - name: Verify native layout on the supported Linux floor
         shell: bash
         run: |
