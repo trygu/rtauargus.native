@@ -4,7 +4,8 @@ check_cran_log <- function(path) {
   if (!any(grepl("^\\* DONE", lines))) stop("CRAN check did not finish: ", path)
   failed <- grepl("^\\* .*\\.\\.\\. (ERROR|WARNING)([[:space:]]|$)", lines) |
     grepl("^Status:.*(ERROR|WARNING)", lines) |
-    grepl("^\\* checking compiled code \\.\\.\\. NOTE", lines)
+    grepl("^\\* checking compiled code \\.\\.\\. NOTE", lines) |
+    grepl("Authors@R field should|no prebuilt vignette index|no 'build/stage23[.]rdb'", lines)
   if (any(failed)) stop(paste(lines[failed], collapse="\n"), call.=FALSE)
   invisible(TRUE)
 }
