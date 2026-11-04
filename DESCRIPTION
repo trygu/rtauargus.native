@@ -25,6 +25,11 @@ Suggests:
     tictoc
 Authors@R: c(
     person(
+      "Trygve", "Falch",
+      email = "trygve.falch@gmail.com",
+      role = c("aut", "cre")
+    ),
+    person(
       "Pierre-Yves", "Berrard",
       email = "pierre-yves.berrard@insee.fr",
       role = c("aut")
@@ -32,7 +37,7 @@ Authors@R: c(
 	person(
 	  "Julien", "Jamme",
 	  email = "julien.jamme@insee.fr",
-	  role = c("aut","cre")
+	  role = c("aut")
 	),
 	person(
 	  "Nathanaël", "Rastout",
@@ -65,15 +70,16 @@ Authors@R: c(
       role = "cph"
     )
   )
-Description: Protects tables by calling the Tau-Argus software from R.
+Description: Protects statistical tables using the native Tau-Argus engine
+    and the HiGHS solver. Retains the high-level interface developed by INSEE.
+    The distribution bundles the engine and solver and does not require a
+    separate Tau-Argus installation.
 License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
 VignetteBuilder: knitr
-URL: https://inseefrlab.github.io/rtauargus,
-    https://github.com/inseefrlab/rtauargus,
+URL: https://github.com/trygu/rtauargus.native,
     https://inseefrlab.github.io/rtauargus/
-BugReports: https://github.com/inseefrlab/rtauargus/issues
 Roxygen: list(markdown = TRUE)
 StagedInstall: no
 Config/roxygen2/version: 8.1.0
