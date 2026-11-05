@@ -577,27 +577,22 @@ jobs:
           R_LIBS="$RLIB" Rscript rtests/tools/install-check.R \
             "$RLIB" "$ENGINE_SHA" "$HIGHS" "$PKGVER"
 
-      - name: Verify the bundled dylibs resolve without build paths
+      - name: Verify the single native module has no build dependencies
         shell: bash
         run: |
           set -euo pipefail
           RLIB="$HOME/rta install/Rlib"
-          # The package module may reference only: the bundled engine
-          # dylibs (@rpath, resolved to the installed package dir),
-          # the R runtime's own libR.dylib (located at runtime), and
-          # the system C++/system libraries. Nothing else, in
-          # particular no build paths.
+          # The engine and HiGHS are linked into this module. Its only
+          # external dependencies are R and system runtime libraries.
           # The module references libR.dylib by its versioned
           # framework path; `R RHOME` gives the versionless
           # R.framework/Resources symlink, so resolve through
           # R.home() + normalizePath.
           LIBR="$(Rscript -e 'cat(normalizePath(file.path(R.home(), "lib", "libR.dylib")))' | tr -d '[:space:]')"
-          # No rpath may point at a build machine: the shipped module
-          # resolves its bundled dylibs through @loader_path (its own
-          # installed directory).
+          # A static engine needs no rpath. Reject absolute search paths
+          # if any are present, so build-machine paths cannot leak.
           rpaths=$(otool -l "$RLIB/rtauargus.native/libs/rtauargus.native.so" \
             | awk '/LC_RPATH/{getline; getline; print $2}')
-          [ -n "$rpaths" ] || { echo "install: no LC_RPATH entries" >&2; exit 1; }
           if echo "$rpaths" | grep -qE '^/'; then
             echo "install: absolute rpath in the installed module:" >&2
             echo "$rpaths" >&2
@@ -608,7 +603,7 @@ jobs:
           # harmless and present in the 0.5.6 binary as well.
           for dep in $(otool -L "$RLIB/rtauargus.native/libs/rtauargus.native.so" | tail -n +2 | awk '{print $1}'); do
             case "$dep" in
-              "$LIBR"|rtauargus.native.so|@rpath/*|@loader_path/*|@executable_path/*|/usr/lib/*|/System/*) ;;
+              "$LIBR"|rtauargus.native.so|/usr/lib/*|/System/*) ;;
               *)
                 echo "unexpected library reference in the installed module: $dep" >&2
                 exit 1
