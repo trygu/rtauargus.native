@@ -518,8 +518,8 @@ jobs:
           test -f "$PKG/src/init.c"
           test -f "$PKG/src/rta_meta.h"
           test -f "$PKG/configure"
-          test -d "$PKG/engine/native/rounder/src"
-          test -d "$PKG/highs"
+          test -d "$PKG/tools/engine/native/rounder/src"
+          test -d "$PKG/tools/highs"
           # Nothing from the repo or from the build leaked in.
           if tar -tzf src/rtauargus.native_*.tar.gz \
               | grep -qE "tauargus-engine/|\.gitmodules"; then
