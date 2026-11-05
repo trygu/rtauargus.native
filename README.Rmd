@@ -56,15 +56,27 @@ be supplied as in the original R interface.
 
 ## Installation
 
-Install the package from [GitHub Releases](https://github.com/trygu/rtauargus.native/releases).
+Install the package from CRAN:
 
-Each GitHub Release (tags `r-v*`) contains one binary per platform,
-a source tarball and a `release-manifest.json` with the SHA-256 hash
-of every asset. The binaries are built for R 4.5.3 (the `r4.5.3` in
-the file name) and install without a compiler. The source tarball
-works with other R versions and needs CMake >= 3.16 and a C++17
-compiler. The CRAN dependencies below install from CRAN as usual
-(on Linux they compile from source, and `igraph` takes a few minutes):
+```r
+install.packages("rtauargus.native")
+```
+
+The package is self-contained: the native engine and HiGHS are bundled
+in it and built at install time. CRAN provides prebuilt binaries for
+macOS and Windows (no compiler needed); on Linux the source compiles at
+install time and needs CMake >= 3.16 and a C++17 compiler. Its
+dependencies install from CRAN as usual.
+
+To install the latest version from [GitHub
+Releases](https://github.com/trygu/rtauargus.native/releases) instead,
+each release (tags `r-v*`) contains one binary per platform, a source
+tarball and a `release-manifest.json` with the SHA-256 hash of every
+asset. The binaries are built for R 4.5.3 (the `r4.5.3` in the file
+name) and install without a compiler. The source tarball works with
+other R versions and needs CMake >= 3.16 and a C++17 compiler.
+Install the CRAN dependencies once first (on Linux they compile from
+source, and `igraph` takes a few minutes):
 
 ```r
 install.packages(c("purrr", "dplyr", "tidyr", "data.table", "gdata",
