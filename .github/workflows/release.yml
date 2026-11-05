@@ -28,8 +28,8 @@
 # engine sha, HiGHS) and layout (bundled native libs load from the
 # installation), and run the full test suite, including the portable
 # ex1 .arb job with the native protection audit. The linux floor job
-# additionally keeps the clean-room checks: no build paths, no host
-# C++ runtime dependency, and the static source-tarball checks.
+# additionally checks the supported Linux runtime floor and the
+# self-contained source tarball.
 #
 # The publish job (on r-v* tags) verifies every file against the build
 # manifests and cuts the GitHub Release with exactly the tested files
@@ -74,6 +74,18 @@ jobs:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Check upstream provenance and R package version
+        shell: bash
+        run: |
+          set -euo pipefail
+          python tools/test-upstream-version.py
+          python tools/upstream-version.py --check
 
       # On a release tag the tag must match the version of the engine
       # pin (the submodule), or the release would ship the wrong engine.
@@ -129,6 +141,56 @@ jobs:
           set -euo pipefail
           mkdir -p build/dist
           (cd build/dist && R CMD build "$GITHUB_WORKSPACE")
+
+      - name: Install pinned shell portability checker
+        if: runner.os != 'Windows'
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/cran-tools"
+          curl --fail --location --retry 3 \
+            https://raw.githubusercontent.com/Debian/devscripts/555a93fde8f16b53de01def05f23f71ac25fe51a/scripts/checkbashisms.pl \
+            --output "$RUNNER_TEMP/cran-tools/checkbashisms"
+          printf '%s  %s\n' 03c2f5d72012a091fea625728638e9b84862fce5712a458eeedddef9c86c611f \
+            "$RUNNER_TEMP/cran-tools/checkbashisms" | shasum -a 256 --check
+          chmod +x "$RUNNER_TEMP/cran-tools/checkbashisms"
+          echo "$RUNNER_TEMP/cran-tools" >> "$GITHUB_PATH"
+
+      - name: Install TeX for the Linux reference-manual check
+        if: runner.os == 'Linux'
+        uses: r-lib/actions/setup-tinytex@v2
+
+      - name: Install reference-manual fonts
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          tlmgr update --self
+          tlmgr install inconsolata collection-fontsrecommended
+
+      - name: Check the complete R source package
+        shell: bash
+        env:
+          _R_CHECK_CRAN_INCOMING_REMOTE_: 'false'
+          _R_CHECK_SYSTEM_CLOCK_: 'false'
+        run: |
+          set -euo pipefail
+          Rscript tools/test-cran-check-log.R
+          mkdir -p build/cran-check
+          manual_option=()
+          if [ "$RUNNER_OS" != Linux ]; then manual_option=(--no-manual); fi
+          R CMD check --as-cran "${manual_option[@]}" --output=build/cran-check build/dist/rtauargus.native_*.tar.gz
+          Rscript tools/check-cran-log.R build/cran-check/rtauargus.native.Rcheck/00check.log
+
+      - name: Preserve CRAN check logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cran-check-${{ matrix.osname }}-${{ matrix.arch }}
+          if-no-files-found: ignore
+          path: |
+            build/cran-check/**/00check.log
+            build/cran-check/**/00install.out
+            build/cran-check/**/*.Rout*
 
       # The documented install procedure: the package tarball into a
       # fresh library. The package's configure builds HiGHS and the
@@ -406,12 +468,9 @@ jobs:
           cd rtests/tests
           R_LIBS="$RLIB" Rscript testthat.R
 
-      # The shipped libraries must not reference build paths or depend
-      # on the host C++ runtime: it is statically linked at build time.
-      # Check the direct NEEDED entries of each shipped .so (not ldd,
-      # whose transitive output includes libR.so's own libstdc++
-      # reference).
-      - name: Verify the native layout (no build paths, no host C++ runtime)
+      # The binary must load with the R and system runtimes on the supported
+      # Linux floor. Engine components are bundled in the single R DLL.
+      - name: Verify native layout on the supported Linux floor
         shell: bash
         run: |
           set -euo pipefail
@@ -425,9 +484,12 @@ jobs:
             echo "install: missing shared object" >&2
             exit 1
           fi
+          # R supplies the C++ runtime convention for source packages.
+          # Loading on this floor image checks its required runtime versions.
+          # The engine components themselves must be linked into the R DLL.
           for f in "$RLIB"/rtauargus.native/libs/*.so; do
-            if objdump -p "$f" | grep -E "NEEDED.*(libstdc\+\+|libgcc_s)"; then
-              echo "install: $f still depends on the host C++ runtime" >&2
+            if objdump -p "$f" | grep -E "NEEDED.*(libtauargus_|libCRP)"; then
+              echo "install: $f still requires a separate engine library" >&2
               exit 1
             fi
           done
@@ -456,8 +518,8 @@ jobs:
           test -f "$PKG/src/init.c"
           test -f "$PKG/src/rta_meta.h"
           test -f "$PKG/configure"
-          test -d "$PKG/engine/native/rounder/src"
-          test -d "$PKG/highs"
+          test -d "$PKG/tools/engine/native/rounder/src"
+          test -d "$PKG/tools/highs"
           # Nothing from the repo or from the build leaked in.
           if tar -tzf src/rtauargus.native_*.tar.gz \
               | grep -qE "tauargus-engine/|\.gitmodules"; then
@@ -515,27 +577,22 @@ jobs:
           R_LIBS="$RLIB" Rscript rtests/tools/install-check.R \
             "$RLIB" "$ENGINE_SHA" "$HIGHS" "$PKGVER"
 
-      - name: Verify the bundled dylibs resolve without build paths
+      - name: Verify the single native module has no build dependencies
         shell: bash
         run: |
           set -euo pipefail
           RLIB="$HOME/rta install/Rlib"
-          # The package module may reference only: the bundled engine
-          # dylibs (@rpath, resolved to the installed package dir),
-          # the R runtime's own libR.dylib (located at runtime), and
-          # the system C++/system libraries. Nothing else, in
-          # particular no build paths.
+          # The engine and HiGHS are linked into this module. Its only
+          # external dependencies are R and system runtime libraries.
           # The module references libR.dylib by its versioned
           # framework path; `R RHOME` gives the versionless
           # R.framework/Resources symlink, so resolve through
           # R.home() + normalizePath.
           LIBR="$(Rscript -e 'cat(normalizePath(file.path(R.home(), "lib", "libR.dylib")))' | tr -d '[:space:]')"
-          # No rpath may point at a build machine: the shipped module
-          # resolves its bundled dylibs through @loader_path (its own
-          # installed directory).
+          # A static engine needs no rpath. Reject absolute search paths
+          # if any are present, so build-machine paths cannot leak.
           rpaths=$(otool -l "$RLIB/rtauargus.native/libs/rtauargus.native.so" \
             | awk '/LC_RPATH/{getline; getline; print $2}')
-          [ -n "$rpaths" ] || { echo "install: no LC_RPATH entries" >&2; exit 1; }
           if echo "$rpaths" | grep -qE '^/'; then
             echo "install: absolute rpath in the installed module:" >&2
             echo "$rpaths" >&2
@@ -546,7 +603,7 @@ jobs:
           # harmless and present in the 0.5.6 binary as well.
           for dep in $(otool -L "$RLIB/rtauargus.native/libs/rtauargus.native.so" | tail -n +2 | awk '{print $1}'); do
             case "$dep" in
-              "$LIBR"|rtauargus.native.so|@rpath/*|@loader_path/*|@executable_path/*|/usr/lib/*|/System/*) ;;
+              "$LIBR"|rtauargus.native.so|/usr/lib/*|/System/*) ;;
               *)
                 echo "unexpected library reference in the installed module: $dep" >&2
                 exit 1

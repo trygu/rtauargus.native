@@ -22,6 +22,8 @@ tauargus_files/*
 ^renovate.json
 ^tauargus-engine$
 ^\.gitmodules$
-^build$
+^build/(dist|bin|cran-check)(/|$)
+(^|/)__pycache__(/|$)
 ^\.rlib$
 ^tools$
+^upstream\.json$

@@ -130,7 +130,7 @@ turnover_act_size <- turnover_act_size \%>\%
 # Make hrc file of business sectors ----
 data(activity_corr_table)
 hrc_file_activity <- activity_corr_table \%>\%
-  write_hrc2(file_name = "hrc/activity")
+  write_hrc2(file_name = file.path(tempdir(), "hrc", "activity"))
 
 # Compute the secondary secret ----
 options(
