@@ -29,7 +29,7 @@ class VersionTests(unittest.TestCase):
             def git(*args):
                 return subprocess.check_output(["git", "-C", str(root), *args], text=True).strip()
             git("init", "-q", "-b", "native")
-            git("config", "user.name", "Trygve Falch")
+            git("config", "user.name", "Trygve Tatsuya Falch")
             git("config", "user.email", "trygve.falch@gmail.com")
             git("remote", "add", "upstream", "https://github.com/InseeFrLab/rtauargus.git")
             (root / "DESCRIPTION").write_text("Package: example\nVersion: 1.3.6\n")

@@ -25,7 +25,8 @@ Suggests:
     tictoc
 Authors@R: c(
     person(
-      "Trygve", "Falch",
+      given = c("Trygve", "Tatsuya"),
+      family = "Falch",
       email = "trygve.falch@gmail.com",
       role = c("aut", "cre")
     ),
