@@ -142,6 +142,26 @@ test_that("WRITETABLE grammar: options, empty-options form and type bounds", {
   expect_error(rtauargus.native:::parse_batch(p3), class = "BatchError")
 })
 
+test_that("WRITETABLE option series: multiple options in one token", {
+  # Legacy writeTableBatch (batch.java) reads one option token and
+  # chomps it in 2-letter code + sign chunks, so AS+AR+ is a series of
+  # two options. The port must keep every option, not silently drop
+  # all but the first.
+  p <- local_arb(c('<WRITETABLE> (1, 5, AS+AR+, "out.tab")'))
+  cmd <- rtauargus.native:::parse_batch(p)[[1]]
+  expect_equal(cmd$options, c("+AS", "+AR"))
+  expect_equal(cmd$file, "out.tab")
+
+  p2 <- local_arb(c('<WRITETABLE> (1, 5, AS+AR+SO-, "out.tab")'))
+  cmd2 <- rtauargus.native:::parse_batch(p2)[[1]]
+  expect_equal(cmd2$options, c("+AS", "+AR", "-SO"))
+  expect_equal(cmd2$file, "out.tab")
+
+  # a sign-less tail of the series is an error, not a silent drop
+  p3 <- local_arb(c('<WRITETABLE> (1, 5, AS+AR, "out.tab")'))
+  expect_error(rtauargus.native:::parse_batch(p3), class = "BatchError")
+})
+
 test_that("READTABLE flags are parsed", {
   # READTABLE is only allowed in table-input position (after the data,
   # metadata and table specification)
