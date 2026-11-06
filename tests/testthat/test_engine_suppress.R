@@ -145,3 +145,39 @@ test_that("GH suppression is rejected in headless mode", {
     "not supported in headless mode"
   )
 })
+
+# Fractional audit (AR+) on a table input.
+#
+# The legacy intervalle port Int()-truncated the JJ bounds of the
+# suppressed cell. On integer tables the cast is a no-op, but on this
+# fixture the dominant a-priori cell (42.25) is forced by its row and
+# column margins to exactly its own value, while the table max (42.75,
+# the grand total) clips the upper bound to 42: the pre-fix engine
+# failed the audit LP with rc -1 ("audit_jj failed"), aborting the
+# batch. The audit must use the fractional bounds as-is and report the
+# exact realized interval.
+test_that("audit (AR+) completes on a fractional table with a dominant cell", {
+  audit <- file.path(out_dir, "audit_frac.tab")
+  expect_message(
+    run_arb(c(
+      sprintf('<OPENTABLEDATA> "%s"', file.path(fx, "audit_frac.tab")),
+      sprintf('<OPENMETADATA> "%s"', file.path(fx, "tab.rda")),
+      '<SPECIFYTABLE> "Size""Region"|"Var2"|"Var2_Shadow"|"Var2"',
+      "<READTABLE> 1T",
+      sprintf('<WRITETABLE> (1, 5, AR+, "%s")', audit)
+    )),
+    "Audit: table 1"
+  )
+
+  lines <- readLines(audit, warn = FALSE)
+  # 3 codes x 4 codes (incl. missing 99) = 12 rows, 15 AR+ fields each
+  expect_length(lines, 12)
+  expect_true(all(vapply(strsplit(lines, ";", fixed = TRUE), length, integer(1)) == 15L))
+
+  # the a-priori (U) cell carries the exact fractional interval
+  expect_identical(lines[6],
+    '"A";"B";42.25;2;42.25;42.25;U;0.00;0.00;42.25;42.25;0.00;0.00;0.00;0.00')
+  # safe and empty rows are audited with zero intervals
+  expect_identical(lines[1],
+    '"Total";"Total";42.75;3;42.75;42.75;S;0.00;0.00;0.00;0.00;0.00;0;0;0')
+})
