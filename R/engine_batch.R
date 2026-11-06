@@ -448,15 +448,18 @@ rta_parse_write_table <- function(tok) {
   c <- tail_next_char(t)
   if (c != ",") stop_batch(", expected; not a ", c)
 
+  # Multiple options form one series token (legacy writeTableBatch):
+  # the token is chomped in 2-letter code + sign chunks until empty.
   options <- character(0)
-  repeat {
-    hs <- toupper(tail_next_token(t))
-    if (hs == "") break
-    if (nchar(hs) < 3L) stop_batch("Unknown option (", hs, ")")
+  hs <- toupper(tail_next_token(t))
+  while (nzchar(hs)) {
+    if (nchar(hs) < 2L) stop_batch("Unknown option (", hs, ")")
     opt <- substring(hs, 1L, 2L)
-    sign <- substring(hs, 3L, 3L)
+    hs <- trimws(substring(hs, 3L))
+    sign <- substring(hs, 1L, 1L)
     if (!(sign %in% c("+", "-")))
       stop_batch("+ or - expected; not a ", sign)
+    hs <- trimws(substring(hs, 2L))
     options <- c(options, paste0(sign, opt))
   }
 
