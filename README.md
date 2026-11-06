@@ -3,7 +3,7 @@
 
 # rtauargus.native
 
-An R interface for [Tau-Argus](https://www.sdcweb.org/tau-argus/),
+An R interface for [Tau-Argus](https://sdcweb.org/tau-argus/),
 statistical disclosure control for tables and microdata.
 
 This is a fork of INSEE’s
@@ -11,9 +11,9 @@ This is a fork of INSEE’s
 the legacy TauArgus.exe executable. This fork executes the same `.arb`
 batches in process, through the native HiGHS-backed
 [tauargus-engine](https://github.com/trygu/tauargus-engine). Function
-names, arguments and return values follow upstream; see
-[docs/compatibility.md](docs/compatibility.md) for the intentional
-differences. The package is self-contained: the native engine and HiGHS
+names, arguments and return values follow upstream; see the
+[compatibility guide](https://github.com/trygu/rtauargus.native/blob/master/docs/compatibility.md)
+for the intentional differences. The package is self-contained: the native engine and HiGHS
 are bundled in it and build at install time, so there is one package to
 install and no separate Tau-Argus installation required. After
 installing the package, load `library(rtauargus.native)` and run the R
@@ -24,7 +24,8 @@ configure.
 
 This README covers installation, native execution, a complete table
 example and direct `.arb` batches for `rtauargus.native`. The
-[compatibility guide](docs/compatibility.md) records the differences
+[compatibility guide](https://github.com/trygu/rtauargus.native/blob/master/docs/compatibility.md)
+records the differences
 from INSEE’s package and the legacy Tau-Argus engine, including output
 formats that are not implemented and possible differences in secondary
 suppression patterns.

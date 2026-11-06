@@ -948,8 +948,8 @@ have not been integrated (the purpose is not to integrate them
 all, only the most frequently used).
 
 For any return or error report, please use
-[this link](https://gitlab.insee.fr/outilsconfidentialite/rtauargus/-/issues)
-(click on **"New issue "**). Requires to be connected to gitlab-Insee.
+[this link](https://github.com/trygu/rtauargus.native/issues)
+(click on **"New issue"**).
 
 #### About this vignette
 
