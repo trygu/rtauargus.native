@@ -11,7 +11,7 @@ Protects tables by calling the Tau-Argus software from R.
 \seealso{
 Useful links:
 \itemize{
-  \item \url{https://inseefrlab.github.io/rtauargus}
+  \item \url{https://inseefrlab.github.io/rtauargus/}
   \item \url{https://github.com/inseefrlab/rtauargus}
   \item \url{https://inseefrlab.github.io/rtauargus/}
   \item Report bugs at \url{https://github.com/inseefrlab/rtauargus/issues}
