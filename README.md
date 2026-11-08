@@ -3,7 +3,7 @@
 
 # rtauargus.native
 
-An R interface for [Tau-Argus](https://sdcweb.org/tau-argus/),
+An R interface for [Tau-Argus](https://github.com/sdcTools/tauargus),
 statistical disclosure control for tables and microdata.
 
 This is a fork of INSEE’s
