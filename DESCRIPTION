@@ -71,15 +71,19 @@ Authors@R: c(
       role = "cph"
     )
   )
-Description: Protects statistical tables using the native Tau-Argus engine
-    and the HiGHS solver. Retains the high-level interface developed by INSEE.
-    The distribution bundles the engine and solver and does not require a
-    separate Tau-Argus installation.
+Description: Protects statistical tables using the native Tau-Argus
+    engine and the HiGHS solver, both bundled in the distribution.
+    Retains the high-level interface developed by INSEE; usage follows
+    the original rtauargus package. Two differences from the original:
+    no TauArgus.exe is required (cross-platform native engine), and
+    audit() reports the realized bounds of a table, the native
+    alternative to intervalle.exe.
 License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
 VignetteBuilder: knitr
 URL: https://github.com/trygu/rtauargus.native,
+    https://github.com/trygu/tauargus-engine,
     https://inseefrlab.github.io/rtauargus/
 BugReports: https://github.com/trygu/rtauargus.native/issues
 Roxygen: list(markdown = TRUE)
