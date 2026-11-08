@@ -707,7 +707,8 @@ new_engine <- function() {
       do_count_bounds = cmd$mod_min_freq
     )
     if (ok > 0)
-      stop_batch("AHiTaS failed: ", hitas_error_string(e$hitas, ok))
+      stop_batch("AHiTaS failed (code ", ok, "): ",
+                 hitas_error_string(e$hitas, ok))
     res <- tauargus_set_secondary_hitas(e$tau, tab)
     message("MOD suppress: ", res$n_set_secondary, " cells set secondary.")
   }
