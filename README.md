@@ -11,24 +11,25 @@ This is a fork of INSEE’s
 the legacy TauArgus.exe executable. This fork executes the same `.arb`
 batches in process, through the native HiGHS-backed
 [tauargus-engine](https://github.com/trygu/tauargus-engine). Function
-names, arguments and return values follow upstream; see the
-[compatibility guide](https://github.com/trygu/rtauargus.native/blob/master/docs/compatibility.md)
-for the intentional differences. The package is self-contained: the native engine and HiGHS
-are bundled in it and build at install time, so there is one package to
-install and no separate Tau-Argus installation required. After
-installing the package, load `library(rtauargus.native)` and run the R
-functions. There is no Tau-Argus executable path or external solver to
-configure.
+names, arguments and return values follow upstream; see [the
+compatibility
+guide](https://github.com/trygu/rtauargus.native/blob/master/docs/compatibility.md)
+for the intentional differences. The package is self-contained: the
+native engine and HiGHS are bundled in it and build at install time, so
+there is one package to install and no separate Tau-Argus installation
+required. After installing the package, load `library(rtauargus.native)`
+and run the R functions. There is no Tau-Argus executable path or
+external solver to configure.
 
 ## Documentation for this version
 
 This README covers installation, native execution, a complete table
 example and direct `.arb` batches for `rtauargus.native`. The
-[compatibility guide](https://github.com/trygu/rtauargus.native/blob/master/docs/compatibility.md)
-records the differences
-from INSEE’s package and the legacy Tau-Argus engine, including output
-formats that are not implemented and possible differences in secondary
-suppression patterns.
+[compatibility
+guide](https://github.com/trygu/rtauargus.native/blob/master/docs/compatibility.md)
+records the differences from INSEE’s package and the legacy Tau-Argus
+engine, including output formats that are not implemented and possible
+differences in secondary suppression patterns.
 
 The high-level R interface builds on INSEE’s rtauargus. Use its [full
 function
@@ -63,9 +64,11 @@ install.packages("rtauargus.native")
 ```
 
 The package is self-contained: the native engine and HiGHS are bundled
-in it and built at install time. CRAN provides prebuilt binaries for
-macOS and Windows (no compiler needed); on Linux the source compiles at
-install time and needs CMake \>= 3.16 and a C++17 compiler. Its
+in it and built at install time. CRAN distributes a source tarball; on
+Windows a prebuilt binary is available from CRAN’s binary repository,
+while on macOS and Linux the package installs from source and compiles
+the bundled engine at install time, which needs CMake \>= 3.16 and a
+C++17 compiler (on macOS, the Xcode command line tools). Its R
 dependencies install from CRAN as usual.
 
 To install the latest version from [GitHub
@@ -84,16 +87,16 @@ install.packages(c("purrr", "dplyr", "tidyr", "data.table", "gdata",
                    "igraph", "lifecycle"))
 ```
 
-The URLs below select release `r-v0.6.0`, whose R packages carry version
-`1.3.7`. For another release, take the asset names from its release
-page. The release tag and the R package version are separate
+The URLs below select release `r-v0.6.2`, whose R package carries
+version `1.3.6-0.6.2`. For another release, take the asset names from
+its release page. The release tag and the R package version are separate
 identifiers.
 
 Windows:
 
 ``` r
 install.packages(
-  "https://github.com/trygu/rtauargus.native/releases/download/r-v0.6.0/rtauargus.native_1.3.7.zip",
+  "https://github.com/trygu/rtauargus.native/releases/download/r-v0.6.2/rtauargus.native_1.3.6-0.6.2.zip",
   repos = NULL, type = "binary")
 library(rtauargus.native)
 ```
@@ -107,7 +110,7 @@ macOS (Apple silicon; the release targets arm64):
 
 ``` r
 install.packages(
-  "https://github.com/trygu/rtauargus.native/releases/download/r-v0.6.0/rtauargus.native_1.3.7_r4.5.3_macos-arm64.tar.gz",
+  "https://github.com/trygu/rtauargus.native/releases/download/r-v0.6.2/rtauargus.native_1.3.6-0.6.2_r4.5.3_macos-arm64.tar.gz",
   repos = NULL, type = "binary")
 library(rtauargus.native)
 ```
@@ -116,7 +119,7 @@ Linux:
 
 ``` r
 install.packages(
-  "https://github.com/trygu/rtauargus.native/releases/download/r-v0.6.0/rtauargus.native_1.3.7_r4.5.3_linux-x86_64.tar.gz",
+  "https://github.com/trygu/rtauargus.native/releases/download/r-v0.6.2/rtauargus.native_1.3.6-0.6.2_r4.5.3_linux-x86_64.tar.gz",
   repos = NULL)
 library(rtauargus.native)
 ```
@@ -130,7 +133,7 @@ at install time):
 
 ``` r
 install.packages(
-  "https://github.com/trygu/rtauargus.native/releases/download/r-v0.6.0/rtauargus.native_1.3.7.tar.gz",
+  "https://github.com/trygu/rtauargus.native/releases/download/r-v0.6.2/rtauargus.native_1.3.6-0.6.2.tar.gz",
   repos = NULL)
 library(rtauargus.native)
 ```
