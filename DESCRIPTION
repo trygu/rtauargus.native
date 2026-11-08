@@ -2,7 +2,7 @@ Package: rtauargus.native
 Type: Package
 Title: Using Tau-Argus from R
 Language: fr
-Version: 1.3.6-0.6.3
+Version: 1.3.6-0.6.4
 Depends: R (>= 4.1.0)
 Imports:
     purrr (>= 0.2),
@@ -91,4 +91,4 @@ StagedInstall: no
 Config/roxygen2/version: 8.1.1
 Config/rtauargus/upstream-version: 1.3.6
 Config/rtauargus/upstream-revision: 2a1e6b158aded6799d559d124bda163f9029499d
-Config/tauargus/native-version: 0.6.3
+Config/tauargus/native-version: 0.6.4

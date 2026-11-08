@@ -87,8 +87,8 @@ install.packages(c("purrr", "dplyr", "tidyr", "data.table", "gdata",
                    "igraph", "lifecycle"))
 ```
 
-The URLs below select release `r-v0.6.3`, whose R package carries
-version `1.3.6-0.6.3`. For another release, take the asset names from
+The URLs below select release `r-v0.6.4`, whose R package carries
+version `1.3.6-0.6.4`. For another release, take the asset names from
 its release page. The release tag and the R package version are separate
 identifiers.
 
@@ -96,7 +96,7 @@ Windows:
 
 ``` r
 install.packages(
-  "https://github.com/trygu/rtauargus.native/releases/download/r-v0.6.3/rtauargus.native_1.3.6-0.6.3.zip",
+  "https://github.com/trygu/rtauargus.native/releases/download/r-v0.6.4/rtauargus.native_1.3.6-0.6.4.zip",
   repos = NULL, type = "binary")
 library(rtauargus.native)
 ```
@@ -110,7 +110,7 @@ macOS (Apple silicon; the release targets arm64):
 
 ``` r
 install.packages(
-  "https://github.com/trygu/rtauargus.native/releases/download/r-v0.6.3/rtauargus.native_1.3.6-0.6.3_r4.5.3_macos-arm64.tar.gz",
+  "https://github.com/trygu/rtauargus.native/releases/download/r-v0.6.4/rtauargus.native_1.3.6-0.6.4_r4.5.3_macos-arm64.tar.gz",
   repos = NULL, type = "binary")
 library(rtauargus.native)
 ```
@@ -119,7 +119,7 @@ Linux:
 
 ``` r
 install.packages(
-  "https://github.com/trygu/rtauargus.native/releases/download/r-v0.6.3/rtauargus.native_1.3.6-0.6.3_r4.5.3_linux-x86_64.tar.gz",
+  "https://github.com/trygu/rtauargus.native/releases/download/r-v0.6.4/rtauargus.native_1.3.6-0.6.4_r4.5.3_linux-x86_64.tar.gz",
   repos = NULL)
 library(rtauargus.native)
 ```
@@ -133,7 +133,7 @@ at install time):
 
 ``` r
 install.packages(
-  "https://github.com/trygu/rtauargus.native/releases/download/r-v0.6.3/rtauargus.native_1.3.6-0.6.3.tar.gz",
+  "https://github.com/trygu/rtauargus.native/releases/download/r-v0.6.4/rtauargus.native_1.3.6-0.6.4.tar.gz",
   repos = NULL)
 library(rtauargus.native)
 ```
