@@ -44,3 +44,6 @@ tests/testthat/_problems/
 # CI-style local build output
 build/
 .rlib/
+
+# local code-intelligence index (regenerable)
+.gitnexus/
