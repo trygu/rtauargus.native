@@ -31,31 +31,30 @@ create the missing folders). \cr
 résultats n'existent pas ("stop" pour déclencher une erreur, "create" pour
 créer les dossiers manquants).)}
 
-\item{tauargus_exe}{directory and name of the Tau-Argus software. \cr
-(répertoire et nom du logiciel Tau-Argus.)}
+\item{tauargus_exe}{kept for backward compatibility; not used by the
+native engine. \cr
+(conserve pour compatibilite ; non utilise par le moteur natif.)}
 
-\item{logbook}{name of the file where the error log is saved.
-If NULL, a "logbook.txt" file will be saved in the working directory). \cr
-(nom du fichier où est enregistré le journal d'erreurs.
-Si NULL, le fichier "logbook.txt" sera suavegardé sur le répertoire de travail.)}
+\item{logbook}{kept for backward compatibility; the native engine does
+not write a logbook file. \cr
+(conserve pour compatibilite ; le moteur natif ne produit pas de
+fichier logbook.)}
 
 \item{show_batch_console}{to display the batch progress in the
 console. \cr
 (pour afficher le déroulement du batch dans la
 console.)}
 
-\item{verbose}{boolean, to display the batch execution (if TRUE) or
-only error messages if any (if FALSE) \cr
-(booléen, pour afficher l'exécution du batch (si TRUE) ou
-uniquement les messages d'erreurs, s'il y en a (si FALSE))}
+\item{verbose}{kept for backward compatibility; no longer used. \cr
+(conserve pour compatibilite ; non utilise.)}
 
 \item{import}{to import in R the files produced, \code{TRUE} by
 default. \cr
 (pour importer dans R les fichiers produits, \code{TRUE} par
 défaut.)}
 
-\item{...}{additional parameters for \code{system()}. \cr
-(paramètres supplémentaires pour \code{system()}.)}
+\item{...}{not used (kept for backward compatibility). \cr
+(non utilise, conserve pour compatibilite.)}
 }
 \value{
 \itemize{
@@ -72,31 +71,29 @@ Executes the instructions contained in an .arb file for Tau-Argus. \cr
 Only the argument \code{arb_filename} is required, because all
 necessary information is present in this file.
 
-This is the only function in the package that runs Tau-Argus. It
-therefore requires the software to be accessible from the workstation.
+The batch is executed in-process by the bundled native engine
+(\code{tauargus-engine}): no Tau-Argus installation or executable is
+required on the workstation.
 
-The location of the TauArgus.exe program is defined globally when the
-loading the package. In fact, the argument \code{tauargus_exe} will not
-normally not have to be specified (except to override the global option the
-time of the execution of the function).
+The arguments \code{tauargus_exe}, \code{logbook}, \code{verbose} and \code{...} are kept
+for backward compatibility and are no longer used.
 
-Checks are made before the actual launching of Tau-Argus:
-existence of the software on the computer, of the asc and rda files, of the folders where
+Checks are made before the actual launching of the engine:
+existence of the asc and rda files, of the folders where
 write the results, the variables to be used (crossings, response variable) in the
 response variable) in the metadata (rda file). \cr
 
 (Seul l’argument \code{arb_filename} est obligatoire, car toutes les
 informations nécessaires sont présentes dans ce fichier.
-Il s'agit de la seule fonction du package qui exécute Tau-Argus. Elle
-nécessite donc que le logiciel soit accessible depuis le poste de travail.
+Le batch est execute par le moteur natif empaqueté (\code{tauargus-engine})
+en cours de processus : aucune installation de Tau-Argus ni executable
+n'est requise sur le poste de travail.
 
-L'emplacement du programme TauArgus.exe est défini de manière globale au
-chargement du package. De fait, l'argument \code{tauargus_exe} n'aura
-normalement pas à être spécifié (sauf pour surcharger l'option globale le
-temps de l'exécution de la fonction).
+Les arguments \code{tauargus_exe}, \code{logbook}, \code{verbose} et \code{...} sont conserves
+pour compatibilite et ne sont plus utilises.
 
-Des vérifications sont effectuées avant le lancement effectif de Tau-Argus :
-existence du logiciel sur le poste, des fichiers asc et rda, des dossiers où
+Des vérifications sont effectuées avant le lancement effectif du moteur :
+existence des fichiers asc et rda, des dossiers où
 écrire les résultats, des variables à utiliser (croisements, variable de
 réponse) dans les métadonnées (fichier rda).)
 }

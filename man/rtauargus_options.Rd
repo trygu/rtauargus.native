@@ -88,7 +88,6 @@ rtauargus.output_type            \tab "\Sexpr{rtauargus.native:::op.rtauargus$rt
 rtauargus.output_options         \tab "\Sexpr{rtauargus.native:::op.rtauargus$rtauargus.output_options}"    \tab                     \cr
 \verb{------------------------}  \tab  \verb{---------------------------------}                      \tab \verb{-------------}\cr
 rtauargus.missing_dir            \tab "\Sexpr{rtauargus.native:::op.rtauargus$rtauargus.missing_dir}"       \tab \code{run_arb()}      \cr
-rtauargus.tauargus_exe           \tab "\Sexpr{rtauargus.native:::op.rtauargus$rtauargus.tauargus_exe}"      \tab                     \cr
 rtauargus.show_batch_console     \tab  \Sexpr{rtauargus.native:::op.rtauargus$rtauargus.show_batch_console} \tab                     \cr
 rtauargus.import                 \tab  \Sexpr{rtauargus.native:::op.rtauargus$rtauargus.import}             \tab
 }
@@ -99,14 +98,13 @@ rtauargus_options()
 
 # modifies some options
 options(
-  rtauargus.tauargus_exe = "Z:/tmp/TauArgus.exe",
   rtauargus.output_type = "4",
   rtauargus.weighted = TRUE
 )
 str(rtauargus_options())
 
 # resets some options (prefix "rtauargus." facultatif)
-reset_rtauargus_options("output_type", "rtauargus.tauargus_exe")
+reset_rtauargus_options("output_type", "weighted")
 str(rtauargus_options())
 
 # resets everything
