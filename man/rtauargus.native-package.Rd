@@ -6,25 +6,25 @@
 \alias{rtauargus.native-package}
 \title{rtauargus.native: Using Tau-Argus from R}
 \description{
-Protects tables by calling the Tau-Argus software from R.
+Protects statistical tables using the native Tau-Argus engine and the HiGHS solver. Retains the high-level interface developed by INSEE. The distribution bundles the engine and solver and does not require a separate Tau-Argus installation.
 }
 \seealso{
 Useful links:
 \itemize{
+  \item \url{https://github.com/trygu/rtauargus.native}
   \item \url{https://inseefrlab.github.io/rtauargus/}
-  \item \url{https://github.com/inseefrlab/rtauargus}
-  \item \url{https://inseefrlab.github.io/rtauargus/}
-  \item Report bugs at \url{https://github.com/inseefrlab/rtauargus/issues}
+  \item Report bugs at \url{https://github.com/trygu/rtauargus.native/issues}
 }
 
 }
 \author{
-\strong{Maintainer}: Julien Jamme \email{julien.jamme@insee.fr}
+\strong{Maintainer}: Trygve Tatsuya Falch \email{trygve.falch@gmail.com}
 
 Authors:
 \itemize{
-  \item Julien Jamme \email{julien.jamme@insee.fr}
+  \item Trygve Tatsuya Falch \email{trygve.falch@gmail.com}
   \item Pierre-Yves Berrard \email{pierre-yves.berrard@insee.fr}
+  \item Julien Jamme \email{julien.jamme@insee.fr}
   \item Nathanaël Rastout \email{nathanael.rastout@insee.fr}
   \item Jeanne Pointet
   \item Félix Beroud
