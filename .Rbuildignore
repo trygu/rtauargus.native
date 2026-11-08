@@ -26,4 +26,5 @@ tauargus_files/*
 (^|/)__pycache__(/|$)
 ^\.rlib$
 ^tools$
+^\.gitnexus$
 ^upstream\.json$
