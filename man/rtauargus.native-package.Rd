@@ -6,12 +6,13 @@
 \alias{rtauargus.native-package}
 \title{rtauargus.native: Using Tau-Argus from R}
 \description{
-Protects statistical tables using the native Tau-Argus engine and the HiGHS solver. Retains the high-level interface developed by INSEE. The distribution bundles the engine and solver and does not require a separate Tau-Argus installation.
+Protects statistical tables using the native Tau-Argus engine and the HiGHS solver, both bundled in the distribution. Retains the high-level interface developed by INSEE; usage follows the original rtauargus package. Two differences from the original: no TauArgus.exe is required (cross-platform native engine), and audit() reports the realized bounds of a table, the native alternative to intervalle.exe.
 }
 \seealso{
 Useful links:
 \itemize{
   \item \url{https://github.com/trygu/rtauargus.native}
+  \item \url{https://github.com/trygu/tauargus-engine}
   \item \url{https://inseefrlab.github.io/rtauargus/}
   \item Report bugs at \url{https://github.com/trygu/rtauargus.native/issues}
 }
