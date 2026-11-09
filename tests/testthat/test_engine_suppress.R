@@ -181,3 +181,15 @@ test_that("audit (AR+) completes on a fractional table with a dominant cell", {
   expect_identical(lines[1],
     '"Total";"Total";42.75;3;42.75;42.75;S;0.00;0.00;0.00;0.00;0.00;0;0;0')
 })
+
+test_that("CKM with a missing p-table fails loudly instead of a silent no-op", {
+  # SetCellKeyValuesFreq returns -9 when the p-table cannot be read.
+  # The legacy TauArgus.exe reported it; the headless driver must too,
+  # and must not register the table as CKM-protected (which would then
+  # reject the normal output types).
+  expect_error(
+    run_arb(micro_batch('<SUPPRESS> CKM(1) "no_such_ptable.freq"')),
+    class = "BatchError",
+    "SetCellKeyValuesFreq"
+  )
+})
