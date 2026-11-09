@@ -157,3 +157,16 @@ test_that("JJ (type 6) and CKM (type 7) are not implemented", {
   expect_error(wt(eng, 7L, character(0), out),
                "not implemented", class = "BatchError")
 })
+
+test_that("a WRITETABLE that cannot be opened raises a batch error", {
+  # The native writers return FALSE when fopen fails; the batch must
+  # stop with an error instead of reporting a successful write.
+  eng <- run_arb(table_batch())
+  bad <- file.path(tempdir(), "no_such_dir", "out.csv")
+  expect_error(
+    eng$write_table(rtauargus.native:::new_write_table(
+      1L, 4L, character(0), bad)),
+    "Cannot open", class = "BatchError"
+  )
+  expect_false(file.exists(bad))
+})

@@ -62,6 +62,33 @@ test_that("the README quick start protects the documented cells", {
   expect_equal(b$Dom, 95, tolerance = 1e-6)
 })
 
+test_that("the README quick start works verbatim with a relative dir_name", {
+  # The README instructs dir_name = "tauargus_files": a relative path
+  # that does not exist yet. The input files create the directory, and
+  # the published CSV must land in it (relative to the working dir).
+  base <- file.path(tempdir(), "tauargus_readme_rel")
+  dir.create(base, showWarnings = FALSE)
+  old <- setwd(base)
+  on.exit(setwd(old), add = TRUE)
+
+  ex1 <- tab_rtauargus(
+    act_size,
+    dir_name = "tauargus_files",
+    files_name = "ex1",
+    explanatory_vars = c("ACTIVITY", "SIZE"),
+    safety_rules = "FREQ(3,10)|NK(1,85)",
+    value = "VAL",
+    freq = "N_OBS",
+    maxscore = "MAX",
+    totcode = c(ACTIVITY = "Total", SIZE = "Total"),
+    verbose = FALSE
+  )
+
+  expect_equal(nrow(ex1), 12L)
+  expect_named(ex1, c("ACTIVITY", "SIZE", "VAL", "N_OBS", "MAX", "Status"))
+  expect_true(file.exists(file.path("tauargus_files", "ex1.csv")))
+})
+
 test_that("a hand-written batch runs over the quick start inputs", {
   dir <- file.path(tempdir(), "tauargus_readme_hand")
   dir.create(dir, showWarnings = FALSE)
