@@ -710,6 +710,8 @@ new_engine <- function() {
       stop_batch("AHiTaS failed (code ", ok, "): ",
                  hitas_error_string(e$hitas, ok))
     res <- tauargus_set_secondary_hitas(e$tau, tab)
+    if (!isTRUE(res$ok))
+      stop_batch("SetSecondaryHITAS failed for table ", tab + 1L)
     message("MOD suppress: ", res$n_set_secondary, " cells set secondary.")
   }
 
@@ -733,6 +735,8 @@ new_engine <- function() {
     lines <- readLines(jj_out, warn = FALSE, encoding = "UTF-8")
     writeLines(c("fop", "fop", paste0(lines, " m")), jj2)
     res2 <- tauargus_set_secondary_jjformat(e$tau, tab, jj2, FALSE)
+    if (res2$code != 1L)
+      stop_batch("SetSecondaryJJFormat failed (code ", res2$code, ")")
     message("OPT suppress: ", res2$n_set_secondary, " cells set secondary.")
   }
 
@@ -769,7 +773,8 @@ new_engine <- function() {
     if (res[[1L]] > 0)
       stop_batch("DoRound failed (result ", res[[1L]],
                  ", err ", res[[5L]], ")")
-    tauargus_set_rounded_response(e$tau, jj_out, tab)
+    if (!isTRUE(tauargus_set_rounded_response(e$tau, jj_out, tab)))
+      stop_batch("SetRoundedResponse failed for table ", tab + 1L)
     e$rounded_tables <- c(e$rounded_tables, tab)
     message("RND suppress: table ", tab + 1L, " rounded (max_jump=",
             format(res[[2L]], digits = 4), ", ", res[[3L]], " steps).")
@@ -778,17 +783,23 @@ new_engine <- function() {
   e$e_suppress_ckm <- function(tab, cmd) {
     if (nzchar(cmd$ckm_p_table)) {
       res <- tauargus_set_cell_key_values_freq(e$tau, tab, cmd$ckm_p_table)
+      if (res$ok != 1L)
+        stop_batch("SetCellKeyValuesFreq failed (code ", res$ok,
+                   ") for ", cmd$ckm_p_table)
       message("CKM freq: min=", res$min, " max=", res$max)
     } else if (nzchar(cmd$ckm_p_table_cont)) {
       if (is.null(e$metadata)) stop_batch("No metadata for CKM.")
       resp <- e$metadata$variables[[1L]]  # simplified, matches the Python port
-      tauargus_set_cell_key_values_cont(
+      res <- tauargus_set_cell_key_values_cont(
         e$tau, tab, cmd$ckm_p_table_cont, cmd$ckm_p_table_sep,
         resp$ckm_type, resp$ckm_top_k, resp$ckm_zeros, resp$ckm_parity,
         resp$ckm_separation, 0.0, resp$ckm_scaling,
         resp$ckm_sigma0, resp$ckm_sigma1, resp$ckm_xstar, resp$ckm_q,
         resp$ckm_epsilon, cmd$ckm_mu_c
       )
+      if (res != 1L)
+        stop_batch("SetCellKeyValuesCont failed (code ", res,
+                   ") for ", cmd$ckm_p_table_cont)
       message("CKM cont: table ", tab + 1L, " processed.")
     }
     e$ckm_tables <- c(e$ckm_tables, tab)

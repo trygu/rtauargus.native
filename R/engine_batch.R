@@ -187,6 +187,22 @@ rta_unquote <- function(s) {
   s
 }
 
+# Validate a numeric batch token and return it. as.integer/as.numeric coerce
+# a bad token to NA (with an easily-missed warning) and the batch would then
+# run on corrupted input; fail loudly with a BatchError that names the field.
+rta_parse_num <- function(value, what, is_int = TRUE) {
+  if (is_int) {
+    if (!grepl("^-?[0-9]+$", value))
+      stop_batch("Invalid number '", value, "' for ", what)
+    as.integer(value)
+  } else {
+    n <- suppressWarnings(as.numeric(value))
+    if (is.na(n))
+      stop_batch("Invalid number '", value, "' for ", what)
+    n
+  }
+}
+
 # ===========================================================================
 # Command constructors (port of the *Command dataclasses)
 # ===========================================================================
@@ -282,7 +298,8 @@ rta_parse_specify_table <- function(tok) {
     shadow <- tok$next_field("|")
     if (tok$get_line() != "") cost <- tok$next_field(",")
     rest <- tok$get_line()
-    if (rest != "") lam <- as.numeric(rest)
+    if (rest != "") lam <- rta_parse_num(rest, "SPECIFYTABLE lambda",
+                                         is_int = FALSE)
   }
 
   new_specify_table(exp_vars = exp_vars, resp_var = resp,
@@ -333,17 +350,18 @@ rta_parse_suppress <- function(tok) {
   tok$clear_line()
 
   token <- tail_next_token(t)
-  tab_no <- as.integer(token)
+  tab_no <- rta_parse_num(token, "SUPPRESS table number")
   cmd <- new_suppress(kind, tab_no)
 
   if (kind == "GH") {
     c <- tail_next_char(t)
     if (c == ",") {
-      cmd$gh_apriory_pct <- as.integer(tail_next_token(t))
+      cmd$gh_apriory_pct <- rta_parse_num(tail_next_token(t),
+                                          "GH apriory pct")
       c <- tail_next_char(t)
     }
     if (c == ",") {
-      cmd$gh_size <- as.integer(tail_next_token(t))
+      cmd$gh_size <- rta_parse_num(tail_next_token(t), "GH size")
       c <- tail_next_char(t)
     }
     if (c == ",") {
@@ -353,7 +371,7 @@ rta_parse_suppress <- function(tok) {
   } else if (kind == "MOD") {
     c <- tail_next_char(t)
     if (c == ",") {
-      cmd$mod_max_time <- as.integer(tail_next_token(t))
+      cmd$mod_max_time <- rta_parse_num(tail_next_token(t), "MOD max time")
       c <- tail_next_char(t)
     }
     i <- 0L
@@ -367,40 +385,44 @@ rta_parse_suppress <- function(tok) {
     }
     if (c == ",") { # MSC, LOWERMARG, UPPERMARG
       msc <- tail_next_token(t)
-      if (msc != "") cmd$mod_msc <- as.numeric(msc)
+      if (msc != "") cmd$mod_msc <- rta_parse_num(msc, "MOD MSC",
+                                                  is_int = FALSE)
       c <- tail_next_char(t)
       if (c == ",") {
         lm <- tail_next_token(t)
-        if (lm != "") cmd$mod_lower_marg <- as.numeric(lm)
+        if (lm != "") cmd$mod_lower_marg <- rta_parse_num(lm, "MOD LOWERMARG",
+                                                          is_int = FALSE)
         c <- tail_next_char(t)
       }
       if (c == ",") {
         um <- tail_next_token(t)
-        if (um != "") cmd$mod_upper_marg <- as.numeric(um)
+        if (um != "") cmd$mod_upper_marg <- rta_parse_num(um, "MOD UPPERMARG",
+                                                          is_int = FALSE)
       }
     }
   } else if (kind == "OPT") {
     c <- tail_next_char(t)
-    if (c == ",") cmd$opt_max_time <- as.integer(tail_next_token(t))
+    if (c == ",") cmd$opt_max_time <- rta_parse_num(tail_next_token(t),
+                                                    "OPT max time")
   } else if (kind == "RND") {
     c <- tail_next_char(t)
     if (c != ",") stop_batch("a comma(,) expected after RND base")
-    cmd$rnd_base <- as.integer(tail_next_token(t))
+    cmd$rnd_base <- rta_parse_num(tail_next_token(t), "RND base")
     c <- tail_next_char(t)
     if (c == ",") { # steps
-      cmd$rnd_step <- as.integer(tail_next_token(t))
+      cmd$rnd_step <- rta_parse_num(tail_next_token(t), "RND steps")
       c <- tail_next_char(t)
     }
     if (c == ",") { # max time
-      cmd$rnd_time <- as.integer(tail_next_token(t))
+      cmd$rnd_time <- rta_parse_num(tail_next_token(t), "RND max time")
       c <- tail_next_char(t)
     }
     if (c == ",") { # partitions
-      cmd$rnd_partitions <- as.integer(tail_next_token(t))
+      cmd$rnd_partitions <- rta_parse_num(tail_next_token(t), "RND partitions")
       c <- tail_next_char(t)
     }
     if (c == ",") { # stop rule
-      cmd$rnd_stop_rule <- as.integer(tail_next_token(t))
+      cmd$rnd_stop_rule <- rta_parse_num(tail_next_token(t), "RND stop rule")
       c <- tail_next_char(t)
     }
     if (c == ",") { # unit cost
@@ -422,7 +444,8 @@ rta_parse_suppress <- function(tok) {
         cmd$ckm_p_table_sep <- rta_unquote(trimws(parts[2L]))
       }
       if (length(parts) > 2L && nzchar(trimws(parts[3L])))
-        cmd$ckm_mu_c <- as.numeric(trimws(parts[3L]))
+        cmd$ckm_mu_c <- rta_parse_num(trimws(parts[3L]), "CKM mu_c",
+                                      is_int = FALSE)
     } else {
       hs <- rta_unquote(rem)
       if (!startsWith(hs, "//")) cmd$ckm_p_table <- hs
@@ -439,10 +462,10 @@ rta_parse_write_table <- function(tok) {
   tok$clear_line()
   c <- tail_next_char(t)
   if (c != "(") stop_batch("( expected; not a ", c)
-  tab_no <- as.integer(tail_next_token(t))
+  tab_no <- rta_parse_num(tail_next_token(t), "WRITETABLE table number")
   c <- tail_next_char(t)
   if (c != ",") stop_batch(", expected; not a ", c)
-  output_type <- as.integer(tail_next_token(t))
+  output_type <- rta_parse_num(tail_next_token(t), "WRITETABLE output type")
   if (output_type < 1L || output_type > 7L)
     stop_batch("Unknown output type (", output_type, ")")
   c <- tail_next_char(t)
@@ -474,7 +497,7 @@ rta_parse_recode <- function(tok) {
   t <- new_tail(tok$get_line())
   tok$clear_line()
   token <- tail_next_token(t)
-  tab_no <- as.integer(token)
+  tab_no <- rta_parse_num(token, "RECODE table number")
   c <- tail_next_char(t)
   if (c != ",") stop_batch("Illegal character ", c, " found. Comma expected")
   var_name <- tail_next_token(t)
@@ -490,7 +513,7 @@ rta_parse_apriory <- function(tok) {
   c <- tok$next_char()
   if (c != ",") stop_batch("a , was expected here")
   hs <- tok$next_field(",")
-  tab_no <- as.integer(hs)
+  tab_no <- rta_parse_num(hs, "APRIORI table number")
   if (tok$test_next_char() != "\"")
     stop_batch("A quote was expected here before the separator")
   tok$next_char() # consume opening quote
