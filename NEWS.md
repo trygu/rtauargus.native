@@ -17,6 +17,13 @@ Fix a TopN check in the table reader that aborted every table with a
 single top contributor (`tab_rtauargus` with a `maxscore` column).
 README: per-platform installation and a runnable quick start.
 
+Fix `tab_rtauargus` (and other batch generators) with a relative
+`dir_name`: the published CSV was written to a doubled path and the
+read-back failed. WRITETABLE output paths in a batch are now resolved
+against the working directory, as in the legacy front-end. A
+`<WRITETABLE>` that cannot be opened now stops the batch with an error
+instead of reporting a successful write.
+
 ## rtauargus 1.3.6
 
 [09/2026]

@@ -985,7 +985,12 @@ new_engine <- function() {
 
     audit_map <- if (with_audit) e$audit_map[[as.character(tab)]] else list()
 
-    conn <- file(path, "w", encoding = "UTF-8")
+    # Open with a batch error if the file cannot be created, so a bad
+    # output path fails loudly instead of being reported as written.
+    conn <- tryCatch(
+      file(path, "w", encoding = "UTF-8"),
+      error = function(e) stop_batch("Cannot open ", path, " for writing")
+    )
     on.exit(close(conn), add = TRUE)
     dim_array <- integer(n_exp)
     cell_idx <- 0L
@@ -1098,9 +1103,13 @@ new_engine <- function() {
     # Write a table to file.
     tab <- as.integer(cmd$tab_no) - 1L
     fpath <- if (nzchar(cmd$file)) {
-      # Absolute paths are used as-is (pathlib '/' semantics, like Python).
+      # Absolute paths are used as-is. Relative paths are resolved
+      # against the working directory, like the legacy front-end (the
+      # batch ran as a subprocess of the R process, so its relative
+      # paths meant "relative to the R working directory") and like
+      # the R-side read-back of the written files.
       if (grepl("^/|[A-Za-z]:[\\\\/]", cmd$file)) cmd$file
-      else file.path(e$work_dir, cmd$file)
+      else file.path(getwd(), cmd$file)
     } else {
       file.path(e$work_dir, paste0("table_", tab + 1L, ".tab"))
     }
@@ -1161,9 +1170,10 @@ new_engine <- function() {
                  if (cmd$output_type == 6L) " (JJ) is not implemented; " else " (CKM) is not implemented; ",
                  "the legacy writer had no native equivalent")
     }
+    ok <- NULL
     if (cmd$output_type == 1L) {
       # CSV
-      tauargus_write_csv(e$tau, tab, fpath, embed, IDENTITY_DIM_SEQUENCE, resp)
+      ok <- tauargus_write_csv(e$tau, tab, fpath, embed, IDENTITY_DIM_SEQUENCE, resp)
     } else if (cmd$output_type == 5L) {
       # INTERMEDIATE (audit table)
       opts <- cmd$options
@@ -1184,15 +1194,21 @@ new_engine <- function() {
       # on for pivot only.
       varnames <- wt_opt("FL", cmd$output_type == 2L)
       first <- if (varnames) first_line() else ""
-      tauargus_write_cell_records(e$tau, tab, fpath, FALSE, FALSE,
-                                  suppress_empty, first, add_status,
-                                  embed, resp)
+      ok <- tauargus_write_cell_records(e$tau, tab, fpath, FALSE, FALSE,
+                                        suppress_empty, first, add_status,
+                                        embed, resp)
     } else if (cmd$output_type == 4L) {
       # SBS
-      tauargus_write_cell_records(e$tau, tab, fpath, TRUE, sbs_hier,
-                                  TRUE, "", TRUE, embed, resp)
+      ok <- tauargus_write_cell_records(e$tau, tab, fpath, TRUE, sbs_hier,
+                                        TRUE, "", TRUE, embed, resp)
     } else {
       stop_batch("Unknown output type ", cmd$output_type)
+    }
+    # The native writers return FALSE when they cannot open the file
+    # (fopen fails); stop instead of reporting a write that did not
+    # happen. The type-5 path already raises an error on a bad open.
+    if (!is.null(ok) && !isTRUE(ok)) {
+      stop_batch("Cannot open ", fpath, " for writing")
     }
     message("Wrote table ", tab + 1L, " to ", fpath)
   }
