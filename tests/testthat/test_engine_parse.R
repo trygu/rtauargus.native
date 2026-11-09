@@ -227,3 +227,34 @@ test_that("BatchError is signalled without warnings (stop() regression)", {
       class = "BatchError")
   )
 })
+
+test_that("malformed numeric batch parameters fail loudly (no silent NA)", {
+  # as.integer/as.numeric coerce "abc" to NA with an easily-missed warning
+  # and the batch would then run on corrupted input. The parser must fail
+  # with a BatchError that names the field.
+  pre <- c(
+    '<OPENMICRODATA> "d.asc"',
+    '<OPENMETADATA> "d.rda"',
+    '<SPECIFYTABLE> "A"|"R"|',
+    "<SAFETYRULE> NK(2,50)",
+    "<READMICRODATA>"
+  )
+  expect_error(
+    rtauargus.native:::parse_batch(local_arb(c(pre, "<SUPPRESS> RND(1, abc)"))),
+    class = "BatchError", "Invalid number")
+  expect_error(
+    rtauargus.native:::parse_batch(local_arb(c(pre, "<SUPPRESS> MOD(1, abc)"))),
+    class = "BatchError", "Invalid number")
+  expect_error(
+    rtauargus.native:::parse_batch(
+      local_arb(c(pre, '<SUPPRESS> CKM(1) "x|y|abc"'))),
+    class = "BatchError", "Invalid number")
+  expect_error(
+    rtauargus.native:::parse_batch(
+      local_arb(c('<WRITETABLE> (1, xyz, "f.csv")'))),
+    class = "BatchError", "Invalid number")
+  # an absent optional numeric keeps its default (MOD max time 0)
+  cmd <- rtauargus.native:::parse_batch(
+    local_arb(c(pre, "<SUPPRESS> MOD(1)")))[[6]]
+  expect_equal(cmd$mod_max_time, 0L)
+})

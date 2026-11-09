@@ -4,6 +4,26 @@ subtitle: History of changes / Historique des modifications
 output: rmarkdown::html_vignette
 ---
 
+## rtauargus 1.3.6-0.6.5
+
+[11/2026]
+
+The batch engine now fails with a `BatchError` when a native
+operation reports a failure instead of continuing silently: CKM
+p-table reads, the rounded-response import after RND, the secondary
+suppression imports after MOD/OPT, and table output writers that
+cannot open the target file. A malformed numeric parameter in a
+batch line (for example `RND(1, abc)`) now fails with a
+`BatchError` that names the field, instead of being silently
+coerced to `NA`.
+
+Fix `tab_rtauargus` (and other batch generators) with a relative
+`dir_name`: the published CSV was written to a doubled path and the
+read-back failed. WRITETABLE output paths in a batch are now resolved
+against the working directory, as in the legacy front-end. A
+`<WRITETABLE>` that cannot be opened now stops the batch with an error
+instead of reporting a successful write.
+
 ## rtauargus 1.3.7
 
 [10/2026]
@@ -16,13 +36,6 @@ procedure: one file from the GitHub Release (see README).
 Fix a TopN check in the table reader that aborted every table with a
 single top contributor (`tab_rtauargus` with a `maxscore` column).
 README: per-platform installation and a runnable quick start.
-
-Fix `tab_rtauargus` (and other batch generators) with a relative
-`dir_name`: the published CSV was written to a doubled path and the
-read-back failed. WRITETABLE output paths in a batch are now resolved
-against the working directory, as in the legacy front-end. A
-`<WRITETABLE>` that cannot be opened now stops the batch with an error
-instead of reporting a successful write.
 
 ## rtauargus 1.3.6
 
