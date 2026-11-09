@@ -69,6 +69,36 @@ Authors@R: c(
     person(
       family = "Institut National de la Statistique et des Études Économiques",
       role = "cph"
+    ),
+    person(
+      "Peter-Paul", "de Wolf",
+      role = "ctb",
+      comment = "Tau-Argus core, HiTaS and rounder"
+    ),
+    person(
+      "Anco", "Hundepool",
+      role = "ctb",
+      comment = "Original Tau-Argus"
+    ),
+    person(
+      "Sarah", "Giessing",
+      role = "ctb",
+      comment = "GHMITER and audit"
+    ),
+    person(
+      "Jordi", "Castro",
+      role = "ctb",
+      comment = "Network solutions and CTA"
+    ),
+    person(
+      "Matteo", "Fischetti",
+      role = "ctb",
+      comment = "CSP library"
+    ),
+    person(
+      family = "ERGO-Code",
+      role = "ctb",
+      comment = "HiGHS solver"
     )
   )
 Description: Protects statistical tables using the native Tau-Argus
@@ -84,6 +114,7 @@ LazyData: true
 VignetteBuilder: knitr
 URL: https://github.com/trygu/rtauargus.native,
     https://github.com/trygu/tauargus-engine,
+    https://github.com/inseefrlab/rtauargus,
     https://inseefrlab.github.io/rtauargus/
 BugReports: https://github.com/trygu/rtauargus.native/issues
 Roxygen: list(markdown = TRUE)
