@@ -77,8 +77,10 @@ each release (tags `r-v*`) contains one binary per platform, a source
 tarball and a `release-manifest.json` with the SHA-256 hash of every
 asset. The binaries are built for R 4.5.3 (the `r4.5.3` in the file
 name) and install without a compiler. The source tarball works with
-other R versions and needs CMake \>= 3.16 and a C++17 compiler. Install
-the CRAN dependencies once first (on Linux they compile from source, and
+other R versions and needs CMake \>= 3.16 and a C++17 compiler.
+
+The prebuilt binaries do not bundle the R dependencies. On a clean
+machine, install them once first (on Linux they compile from source, and
 `igraph` takes a few minutes):
 
 ``` r
@@ -90,7 +92,9 @@ install.packages(c("purrr", "dplyr", "tidyr", "data.table", "gdata",
 The URLs below select release `r-v0.6.4`, whose R package carries
 version `1.3.6-0.6.4`. For another release, take the asset names from
 its release page. The release tag and the R package version are separate
-identifiers.
+identifiers. On a clean machine, install the R dependencies (the code
+block above) before any of these URLs; the binary install does not fetch
+them, and `library(rtauargus.native)` fails on the first missing one.
 
 Windows:
 
