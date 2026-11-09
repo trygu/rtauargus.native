@@ -58,27 +58,16 @@ be supplied as in the original R interface.
 
 ## Installation
 
-Install the package from CRAN:
-
-```r
-install.packages("rtauargus.native")
-```
-
 The package is self-contained: the native engine and HiGHS are bundled
-in it and built at install time. CRAN distributes a source tarball; on
-Windows a prebuilt binary is available from CRAN's binary repository,
-while on macOS and Linux the package installs from source and compiles
-the bundled engine at install time, which needs CMake >= 3.16 and a
-C++17 compiler (on macOS, the Xcode command line tools). Its R
-dependencies install from CRAN as usual.
-
-To install the latest version from [GitHub
-Releases](https://github.com/trygu/rtauargus.native/releases) instead,
-each release (tags `r-v*`) contains one binary per platform, a source
-tarball and a `release-manifest.json` with the SHA-256 hash of every
-asset. The binaries are built for R 4.5.3 (the `r4.5.3` in the file
-name) and install without a compiler. The source tarball works with
-other R versions and needs CMake >= 3.16 and a C++17 compiler.
+in it and built at install time. Each [GitHub
+Release](https://github.com/trygu/rtauargus.native/releases) (tags
+`r-v*`) contains one prebuilt binary per platform, a source tarball and
+a `release-manifest.json` with the SHA-256 hash of every asset. The
+binaries are built for R 4.5.3 (the `r4.5.3` in the file name) and
+install without a compiler. The source tarball works with other R
+versions and compiles the bundled engine at install time, which needs
+CMake >= 3.16 and a C++17 compiler (on macOS, the Xcode command line
+tools). Its R dependencies install from CRAN as usual.
 
 The prebuilt binaries do not bundle the R dependencies. On a clean
 machine, install them once first (on Linux they compile from source,
