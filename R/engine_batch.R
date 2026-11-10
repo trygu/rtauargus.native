@@ -194,10 +194,13 @@ rta_parse_num <- function(value, what, is_int = TRUE) {
   if (is_int) {
     if (!grepl("^-?[0-9]+$", value))
       stop_batch("Invalid number '", value, "' for ", what)
-    as.integer(value)
+    n <- suppressWarnings(as.integer(value))
+    if (is.na(n))
+      stop_batch("Invalid number '", value, "' for ", what)
+    n
   } else {
     n <- suppressWarnings(as.numeric(value))
-    if (is.na(n))
+    if (!is.finite(n))
       stop_batch("Invalid number '", value, "' for ", what)
     n
   }
