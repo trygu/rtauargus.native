@@ -64,6 +64,13 @@ test_that("MOD completes on the fractional hierarchical table", {
   # occurs is absent from the table (reads as NA), so count it directly
   # rather than through the table.
   expect_equal(sum(res$Status == "V") + sum(res$Status == "D"), 1224L)
+  # Legacy tau-ARGUS 4.1 protects the table with 224 secondary
+  # suppressions; the native engine lands within a few cells of that
+  # (221 on the current solver, both variants; the secondary set is a
+  # combinatorial optimum with equivalent alternatives, and HiGHS
+  # tie-breaks differ from CPLEX). The band catches the D=0 regression
+  # (protection-level LP tolerance) without pinning solver tie-breaks.
+  expect_true(sum(res$Status == "D") >= 180L && sum(res$Status == "D") <= 250L)
   # The published values are finite.
   v <- res[res$Status == "V", "response"]
   expect_true(all(is.finite(v)))
@@ -81,6 +88,7 @@ test_that("MOD completes on the integer variant of the same table", {
   st <- table(res$Status)
   expect_equal(st[["B"]], 429L)
   expect_equal(sum(res$Status == "V") + sum(res$Status == "D"), 1224L)
+  expect_true(sum(res$Status == "D") >= 180L && sum(res$Status == "D") <= 250L)
   expect_true(all(is.finite(res$response[res$Status == "V"])))
 })
 
