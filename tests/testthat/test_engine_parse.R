@@ -258,3 +258,40 @@ test_that("malformed numeric batch parameters fail loudly (no silent NA)", {
     local_arb(c(pre, "<SUPPRESS> MOD(1)")))[[6]]
   expect_equal(cmd$mod_max_time, 0L)
 })
+
+test_that("numeric batch tokens must be representable and finite", {
+  pre <- c(
+    '<OPENMICRODATA> "d.asc"',
+    '<OPENMETADATA> "d.rda"',
+    '<SPECIFYTABLE> "A"|"R"|',
+    "<SAFETYRULE> NK(2,50)",
+    "<READMICRODATA>"
+  )
+  for (value in c("2147483648", "-2147483649", "-2147483648")) {
+    expect_error(
+      rtauargus.native:::parse_batch(
+        local_arb(c(pre, paste0("<SUPPRESS> RND(1, ", value, ")")))),
+      "Invalid number.*RND base", class = "BatchError"
+    )
+  }
+  for (value in c("Inf", "-Inf", "1e309")) {
+    expect_error(
+      rtauargus.native:::parse_batch(
+        local_arb(c('<OPENMICRODATA> "d.asc"',
+                    '<OPENMETADATA> "d.rda"',
+                    paste0('<SPECIFYTABLE> "A"|"R"||,', value)))),
+      "Invalid number.*SPECIFYTABLE lambda", class = "BatchError"
+    )
+  }
+  expect_identical(
+    rtauargus.native:::parse_batch(
+      local_arb(c(pre, "<SUPPRESS> RND(1, 2147483647)")))[[6]]$rnd_base,
+    2147483647L
+  )
+  expect_equal(
+    rtauargus.native:::parse_batch(
+      local_arb(c('<OPENMICRODATA> "d.asc"', '<OPENMETADATA> "d.rda"',
+                  '<SPECIFYTABLE> "A"|"R"||,1e3')))[[3]]$lam,
+    1000
+  )
+})
