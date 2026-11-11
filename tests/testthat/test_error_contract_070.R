@@ -37,8 +37,9 @@ micro_batch <- function(extra = NULL) {
 with_corrupt_metadata <- function(corrupt, expr) {
   orig <- rtauargus.native:::rta_parse_rda
   assignInNamespace("rta_parse_rda", function(path) {
-    meta <- orig(path)
-    corrupt(meta)
+    # corrupt() mutates and returns the metadata; R copies on write,
+    # so the return value must be assigned back.
+    meta <- corrupt(orig(path))
     meta
   }, ns = "rtauargus.native")
   on.exit(
@@ -54,8 +55,13 @@ with_corrupt_metadata <- function(corrupt, expr) {
 with_shadowed_native <- function(fun_name, fake, expr) {
   ns <- asNamespace("rtauargus.native")
   orig <- get(fun_name, envir = ns)
+  unlockBinding(fun_name, ns)
   assign(fun_name, fake, envir = ns)
-  on.exit(assign(fun_name, orig, envir = ns), add = TRUE)
+  on.exit({
+    unlockBinding(fun_name, ns)
+    assign(fun_name, orig, envir = ns)
+    lockBinding(fun_name, ns)
+  }, add = TRUE)
   expr
 }
 
@@ -115,10 +121,16 @@ test_that("batch errors are still BatchError, not translated", {
 # -- phase 5.2: previously ignored native returns -----------------------------
 
 test_that("a failing hierarchical codelist stops the batch", {
+  # The file exists but is malformed (a level-1 line without a level-0
+  # parent), so the front-end path check passes and the native
+  # SetHierarchicalCodelist fails (HC_ code, >= 1500).
+  hrc <- tempfile(fileext = ".hrc")
+  on.exit(unlink(hrc), add = TRUE)
+  writeLines("1.1", hrc)
   err <- with_corrupt_metadata(
     function(meta) {
       meta$variables[[1L]]$hierarchical <- 2L  # HIER_FILE
-      meta$variables[[1L]]$hier_file_name <- file.path(fx, "no_such_hrc.hrc")
+      meta$variables[[1L]]$hier_file_name <- hrc
       meta$variables[[1L]]$leading_string <- "1."
       invisible(meta)
     },
@@ -168,6 +180,6 @@ test_that("a failing batch exits Rscript non-zero with the message", {
     R.home("Rscript"), shQuote(script),
     stdout = tempfile(), stderr = err_file, wait = TRUE))
   expect_gt(res, 0L)
-  expect_match(paste(readLines(err_file, warn = FALSE)),
+  expect_match(paste(readLines(err_file, warn = FALSE), collapse = ""),
                "SetCellKeyValuesFreq")
 })

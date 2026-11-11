@@ -156,11 +156,11 @@ test_that("file recode merges source codes into the destination code", {
   ncol <- 4L # Total A B X
   lin <- function(row, col) (row - 1L) * ncol + col
   # merged row (row 2) carries all records
-  expect_equal(tauargusengine::tauargus_get_table_cell_value(eng$tau, 0L, lin(2L, 1L) - 1L), 40000)
-  expect_equal(tauargusengine::tauargus_get_table_cell_value(eng$tau, 0L, lin(2L, 2L) - 1L), 21000)
-  expect_equal(tauargusengine::tauargus_get_table_cell_value(eng$tau, 0L, lin(2L, 3L) - 1L), 19000)
+  expect_equal(tauargusengine::tauargus_get_table_cell_value(eng$tau, 0L, lin(2L, 1L) - 1L)$value, 40000)
+  expect_equal(tauargusengine::tauargus_get_table_cell_value(eng$tau, 0L, lin(2L, 2L) - 1L)$value, 21000)
+  expect_equal(tauargusengine::tauargus_get_table_cell_value(eng$tau, 0L, lin(2L, 3L) - 1L)$value, 19000)
   # the destination-code row (row 3) itself is empty
-  expect_equal(tauargusengine::tauargus_get_table_cell_value(eng$tau, 0L, lin(3L, 2L) - 1L), 0)
+  expect_equal(tauargusengine::tauargus_get_table_cell_value(eng$tau, 0L, lin(3L, 2L) - 1L)$value, 0)
 })
 
 test_that("truncation recode keeps only the requested level", {
