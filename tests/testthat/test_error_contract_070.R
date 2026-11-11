@@ -174,12 +174,15 @@ test_that("a failing batch exits Rscript non-zero with the message", {
     sprintf("rtauargus.native:::run_engine_batch('%s')", arb)
   ), script)
 
-  err_file <- tempfile(fileext = ".err")
-  on.exit(unlink(err_file), add = TRUE)
-  res <- suppressWarnings(system2(
-    R.home("Rscript"), shQuote(script),
-    stdout = tempfile(), stderr = err_file, wait = TRUE))
+  # Rscript lives under R.home("bin") on every platform; R.home("Rscript")
+  # only resolves on macOS bundles. Capture the merged output through the
+  # shell, because system2() does not redirect stderr on Windows.
+  out_file <- tempfile(fileext = ".log")
+  on.exit(unlink(out_file), add = TRUE)
+  res <- system(paste(
+    shQuote(file.path(R.home("bin"), "Rscript")), shQuote(script),
+    ">", shQuote(out_file), "2>&1"))
   expect_gt(res, 0L)
-  expect_match(paste(readLines(err_file, warn = FALSE), collapse = ""),
+  expect_match(paste(readLines(out_file, warn = FALSE), collapse = ""),
                "SetCellKeyValuesFreq")
 })
