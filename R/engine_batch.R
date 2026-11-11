@@ -33,6 +33,34 @@ stop_batch <- function(...) {
     class = c("BatchError", "error", "condition")))
 }
 
+# A native engine call failed. Carries the numeric code in `code` (0 when
+# the binding reported none). Subclass of BatchError so existing
+# tryCatch(class = "BatchError") handlers keep working.
+stop_native <- function(code, message, context = "") {
+  msg <- if (nzchar(context)) paste0(context, ": ", message) else message
+  stop(structure(
+    list(message = msg, code = as.integer(code), call = NULL),
+    class = c("TauArgusNativeError", "BatchError", "error", "condition")))
+}
+
+# Translate an error signalled by the native binding (its message starts
+# with "Tau-Argus native error") into a TauArgusNativeError condition.
+# Pure: returns the condition without signalling it (NULL when `e` is not
+# a native error); the caller re-signals it with stop(). The numeric code
+# is parsed from the message ("(code N") and stays in the message, so the
+# code survives Rscript/R CMD BATCH in the printed error.
+rta_native_error_condition <- function(e, context = "") {
+  msg <- conditionMessage(e)
+  if (!startsWith(msg, "Tau-Argus native error")) return(NULL)
+  code <- 0L
+  m <- regmatches(msg, regexec("\\(code (-?[0-9]+)", msg))
+  if (length(m[[1L]]) == 2L) code <- as.integer(m[[1L]][2L])
+  if (nzchar(context)) msg <- paste0(context, ": ", msg)
+  structure(
+    list(message = msg, code = code, call = NULL),
+    class = c("TauArgusNativeError", "BatchError", "error", "condition"))
+}
+
 # ===========================================================================
 # Tokenizer — 1:1 port of argus.utils.Tokenizer
 # ===========================================================================
