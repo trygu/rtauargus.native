@@ -167,21 +167,40 @@ test_that("a failing batch exits Rscript non-zero with the message", {
   on.exit(unlink(arb), add = TRUE)
   writeLines(micro_batch('<SUPPRESS> CKM(1) "no_such_ptable.freq"'), arb)
 
+  # The child script mirrors the parent session's library paths (deparse
+  # escapes the paths for any platform) and takes the batch file as its
+  # first argument, so no Windows path ever appears in the script source.
   script <- tempfile(fileext = ".R")
   on.exit(unlink(script), add = TRUE)
+  libs <- .libPaths()[nzchar(.libPaths())]
+  lib_line <- if (length(libs))
+    sprintf(".libPaths(c(%s, .libPaths()))",
+            paste(deparse(libs), collapse = ""))
   writeLines(c(
+    lib_line,
+    "args <- commandArgs(trailingOnly = TRUE)",
     "library(rtauargus.native)",
-    sprintf("rtauargus.native:::run_engine_batch('%s')", arb)
+    "rtauargus.native:::run_engine_batch(args[1])"
   ), script)
 
-  # Rscript lives under R.home("bin") on every platform; R.home("Rscript")
-  # only resolves on macOS bundles. Capture the merged output through the
-  # shell, because system2() does not redirect stderr on Windows.
+  # Rscript lives in R.home("bin") on every platform (on Windows as
+  # Rscript.exe, possibly under an arch subdirectory). R.home("Rscript")
+  # only resolves on macOS bundles, so locate the binary explicitly.
+  bin <- R.home("bin")
+  cands <- c(file.path(bin, "Rscript"),
+             file.path(bin, "Rscript.exe"),
+             file.path(bin, "x64", "Rscript.exe"),
+             file.path(bin, "i386", "Rscript.exe"))
+  rscript <- cands[file.exists(cands)][1]
+  expect_true(!is.na(rscript))
+
+  # system2() redirects stdout/stderr to files without a shell, which is
+  # portable (system() does not honour shell redirection on Windows).
   out_file <- tempfile(fileext = ".log")
   on.exit(unlink(out_file), add = TRUE)
-  res <- system(paste(
-    shQuote(file.path(R.home("bin"), "Rscript")), shQuote(script),
-    ">", shQuote(out_file), "2>&1"))
+  res <- suppressWarnings(system2(
+    rscript, c(shQuote(script), shQuote(arb)),
+    stdout = out_file, stderr = out_file, wait = TRUE))
   expect_gt(res, 0L)
   expect_match(paste(readLines(out_file, warn = FALSE), collapse = ""),
                "SetCellKeyValuesFreq")
