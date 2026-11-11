@@ -64,10 +64,10 @@ test_that("MOD suppression sets secondary cells and the audit reflects it", {
 
   # the secondary cell status is set in the table itself
   expect_equal(
-    tauargusengine::tauargus_get_table_cell_status(eng$tau, 0L, lin(1L, 2L) - 1L),
+    tauargusengine::tauargus_get_table_cell_status(eng$tau, 0L, lin(1L, 2L) - 1L)$status,
     rtauargus.native:::CS_SECONDARY_UNSAFE)
   # the grand total value is preserved by the modification
-  expect_equal(tauargusengine::tauargus_get_table_cell_value(eng$tau, 0L, 0L), 40000)
+  expect_equal(tauargusengine::tauargus_get_table_cell_value(eng$tau, 0L, 0L)$value, 40000)
 })
 
 test_that("OPT suppression sets secondary cells and audits", {
@@ -88,7 +88,7 @@ test_that("OPT suppression sets secondary cells and audits", {
   expect_identical(lines[2],
     '"Total";" A";21000.00;6;21000.00;21000.00;5000.00;5000.00;M;0.01;0.01;-0.00;40000.00;40000.00;100.00;90.48;190.48')
   expect_equal(
-    tauargusengine::tauargus_get_table_cell_status(eng$tau, 0L, lin(1L, 2L) - 1L),
+    tauargusengine::tauargus_get_table_cell_status(eng$tau, 0L, lin(1L, 2L) - 1L)$status,
     rtauargus.native:::CS_SECONDARY_UNSAFE)
 })
 
@@ -121,9 +121,9 @@ test_that("RND rounds to multiples of the base and preserves additivity", {
   expect_true(all(nums[!is.na(nums)] %% 10000 == 0))
 
   # the raw (unrounded) responses are left untouched in the table
-  expect_equal(tauargusengine::tauargus_get_table_cell_value(eng$tau, 0L, lin(2L, 2L) - 1L),
+  expect_equal(tauargusengine::tauargus_get_table_cell_value(eng$tau, 0L, lin(2L, 2L) - 1L)$value,
                10000) # (1, A) raw
-  expect_equal(tauargusengine::tauargus_get_table_cell_value(eng$tau, 0L, lin(2L, 3L) - 1L),
+  expect_equal(tauargusengine::tauargus_get_table_cell_value(eng$tau, 0L, lin(2L, 3L) - 1L)$value,
                4500)  # (1, B) raw
 })
 

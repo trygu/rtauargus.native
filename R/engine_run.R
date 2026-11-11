@@ -71,9 +71,14 @@ new_engine <- function() {
     if (var$hierarchical == 2L) {
       # HIER_FILE
       hier_path <- e$e_resolve_path(var$hier_file_name)
-      tauargus_set_hierarchical_codelist(e$tau, var$index,
-                                         as.character(hier_path),
-                                         var$leading_string)
+      rc <- tauargus_set_hierarchical_codelist(e$tau, var$index,
+                                               as.character(hier_path),
+                                               var$leading_string)
+      if (rc != 1L) {  # 1 = success; HC_* codes (>= 1500) = failure
+        stop_batch("SetHierarchicalCodelist failed for variable ",
+                   var$name, " file=", var$hier_file_name, ": ",
+                   tauargus_error_string(e$tau, rc))
+      }
     } else if (var$hierarchical == 1L) {
       # HIER_LEVELS — trim trailing zero levels (Java counts up to the last
       # non-zero).
@@ -221,7 +226,7 @@ new_engine <- function() {
     has_status <- !(srs$dom_rule || srs$pq_rule || has_freq ||
                       srs$zero_rule || srs$apply_weight || srs$apply_peep)
 
-    ok <- tauargus_set_table_safety_info(
+    res <- tauargus_set_table_safety_info(
       e$tau,
       index = idx,
       has_maxscore = has_max_score,
@@ -242,7 +247,8 @@ new_engine <- function() {
       empty_as_ns = FALSE,
       ns_range = 10L
     )
-    if (!isTRUE(ok)) stop_batch("SetTableSafetyInfo failed for table ", idx + 1L)
+    if (!isTRUE(res$ok))
+      stop_batch("SetTableSafetyInfo failed for table ", idx + 1L)
   }
 
   e$read_microdata <- function() {
@@ -553,30 +559,30 @@ new_engine <- function() {
 
   e$e_set_in_table <- function(idx, cell) {
     # Fill one cell (codes already normalised by _build_cell).
-    ok <- tauargus_set_in_table(
+    res <- tauargus_set_in_table(
       e$tau, idx = idx, codes = cell$codes, shadow = cell$shadow,
       cost = cell$cost, resp = cell$response, freq = cell$freq,
       maxscore = cell$max_score, maxscore_hold = numeric(0),
       status = cell$status, lpl = cell$lower, upl = cell$upper
     )
-    if (!isTRUE(ok))
+    if (!isTRUE(res$ok))
       stop_batch("SetInTable failed for table ", idx + 1L,
                  ": codes=", paste(cell$codes, collapse = ","),
-                 " err=", ok[1L], " ev=", ok[2L])
+                 " err=", res$err, " err_var=", res$err_var)
   }
 
   e$e_backup_cell_statuses <- function(idx) {
     sz <- tauargus_get_total_table_size(e$tau, idx)
-    ncell <- as.integer(sz[1L])
+    ncell <- as.integer(sz$n_cells)
     statuses <- integer(ncell)
     lpls <- numeric(ncell)
     upls <- numeric(ncell)
     for (nc in seq_len(ncell)) {
-      statuses[nc] <- as.integer(
-        tauargus_get_table_cell_status(e$tau, idx, nc - 1L))
+      st <- tauargus_get_table_cell_status(e$tau, idx, nc - 1L)
+      statuses[nc] <- as.integer(st$status)
       pl <- tauargus_get_table_cell_protection_levels(e$tau, idx, nc - 1L)
-      lpls[nc] <- pl[1L]
-      upls[nc] <- pl[2L]
+      lpls[nc] <- pl$lower
+      upls[nc] <- pl$upper
     }
     list(statuses = statuses, lpls = lpls, upls = upls)
   }
@@ -585,9 +591,14 @@ new_engine <- function() {
     for (nc in seq_along(backup$statuses)) {
       st <- backup$statuses[nc]
       if (st %in% c(CS_UNKNOWN, CS_EMPTY, 13L)) next  # UNKNOWN/EMPTY/EMPTY_NONSTRUCT
-      tauargus_set_table_cell_status_cell(e$tau, idx, nc - 1L, st)
-      tauargus_set_table_cell_protection_levels(
-        e$tau, idx, nc - 1L, backup$lpls[nc], backup$upls[nc])
+      if (!isTRUE(tauargus_set_table_cell_status_cell(
+        e$tau, idx, nc - 1L, st)))
+        stop_batch("SetTableCellStatus failed for table ", idx + 1L,
+                   " cell ", nc)
+      if (!isTRUE(tauargus_set_table_cell_protection_levels(
+        e$tau, idx, nc - 1L, backup$lpls[nc], backup$upls[nc])))
+        stop_batch("SetTableCellProtectionLevels failed for table ",
+                   idx + 1L, " cell ", nc)
     }
   }
 
@@ -616,7 +627,7 @@ new_engine <- function() {
     has_status <- !(srs$dom_rule || srs$pq_rule ||
                     length(srs$min_freq) > 0L ||
                     srs$zero_rule || srs$apply_weight || srs$apply_peep)
-    ok <- tauargus_set_table_safety_info(
+    res <- tauargus_set_table_safety_info(
       e$tau,
       index = idx,
       has_maxscore = has_max_score,
@@ -635,8 +646,8 @@ new_engine <- function() {
       empty_as_ns = FALSE,
       ns_range = 10
     )
-    if (!isTRUE(ok)) stop_batch("SetTableSafetyInfo failed for table ",
-                                idx + 1L)
+    if (!isTRUE(res$ok)) stop_batch("SetTableSafetyInfo failed for table ",
+                                    idx + 1L)
   }
 
   # =========================================================================
@@ -659,11 +670,11 @@ new_engine <- function() {
   e$e_table_cell_bounds <- function(tab) {
     # Return c(min, max) finite cell value of tab (Java minTabVal/maxTabVal).
     sz <- tauargus_get_total_table_size(e$tau, tab)
-    n <- as.integer(sz[1L])
+    n <- as.integer(sz$n_cells)
     lo <- NA_real_
     hi <- NA_real_
     for (i in seq_len(n)) {
-      v <- tauargus_get_table_cell_value(e$tau, tab, i - 1L)
+      v <- tauargus_get_table_cell_value(e$tau, tab, i - 1L)$value
       if (is.na(v)) next
       if (is.na(lo) || v < lo) lo <- v
       if (is.na(hi) || v > hi) hi <- v
@@ -697,7 +708,9 @@ new_engine <- function() {
     if (!isTRUE(tauargus_prepare_hitas(e$tau, tab, param_file, files_file,
                                        tmp)))
       stop_batch("PrepareHITAS failed")
-    ok <- hitas_a_hitas(
+    # On failure the binding raises ("AHiTaS failed (code N: ...)");
+    # the batch dispatch translates it to TauArgusNativeError.
+    hitas_a_hitas(
       e$hitas,
       pars_file = param_file,
       files_file = files_file,
@@ -706,9 +719,6 @@ new_engine <- function() {
       single_with_more = cmd$mod_singleton_multi,
       do_count_bounds = cmd$mod_min_freq
     )
-    if (ok > 0)
-      stop_batch("AHiTaS failed (code ", ok, "): ",
-                 hitas_error_string(e$hitas, ok))
     res <- tauargus_set_secondary_hitas(e$tau, tab)
     if (!isTRUE(res$ok))
       stop_batch("SetSecondaryHITAS failed for table ", tab + 1L)
@@ -726,11 +736,10 @@ new_engine <- function() {
     if (!isTRUE(tauargus_write_jj_format(e$tau, tab, jj_in, b[1L], b[2L],
                                          FALSE, FALSE, FALSE)))
       stop_batch("WriteJJFormat failed for OPT")
-    res <- hitas_full_jj(e$hitas, in_file_jj = jj_in, out_file = jj_out,
-                         max_time = cmd$opt_max_time)
-    if (res > 1)
-      stop_batch("FullJJ failed (code ", res, "): ",
-                 hitas_error_string(e$hitas, res))
+    # On failure the binding raises ("FullJJ failed (code N: ...)");
+    # the batch dispatch translates it to TauArgusNativeError.
+    hitas_full_jj(e$hitas, in_file_jj = jj_in, out_file = jj_out,
+                  max_time = cmd$opt_max_time)
     # Append " m" to every line of JJ.OUT (secondary-marker form) -> JJ2.OUT
     lines <- readLines(jj_out, warn = FALSE, encoding = "UTF-8")
     writeLines(c("fop", "fop", paste0(lines, " m")), jj2)
@@ -896,7 +905,7 @@ new_engine <- function() {
     # Deactivate every node at max_level that has children, then recode.
     tauargus_undo_recode(e$tau, var_idx)
     sz <- tauargus_get_var_number_of_codes(e$tau, var_idx)
-    n_codes <- as.integer(sz[1L])
+    n_codes <- as.integer(sz$n_codes)
     closed <- 0L
     for (i in seq_len(n_codes)) {
       p <- tauargus_get_var_code_properties(e$tau, var_idx, i - 1L)
@@ -919,7 +928,7 @@ new_engine <- function() {
     # Deactivate the parent codes listed in a <TREERECODE> file, then recode.
     tauargus_undo_recode(e$tau, var_idx)
     sz <- tauargus_get_var_number_of_codes(e$tau, var_idx)
-    n_codes <- as.integer(sz[1L])
+    n_codes <- as.integer(sz$n_codes)
     index_by_code <- list()
     for (i in seq_len(n_codes)) {
       p <- tauargus_get_var_code(e$tau, var_idx, i - 1L)
@@ -976,7 +985,7 @@ new_engine <- function() {
     max_dim <- integer(n_exp)
     for (j in seq_len(n_exp)) {
       sz <- tauargus_get_var_number_of_codes(tau, exp_vars[j])
-      max_dim[j] <- as.integer(sz[2L])
+      max_dim[j] <- as.integer(sz$n_active)
     }
 
     # Pre-compute code strings for each (var, code_idx).
@@ -1274,7 +1283,7 @@ new_engine <- function() {
     for (i in seq_len(n_exp)) {
       vi <- exp_vars[i]
       sz <- tauargus_get_var_number_of_codes(tau, vi)
-      max_dim[i] <- as.integer(sz[2L])
+      max_dim[i] <- as.integer(sz$n_active)
       var <- meta$variables[[vi + 1L]]
       arr <- character(0)
       lv <- list()
@@ -1492,7 +1501,18 @@ new_engine <- function() {
     e$protect_cover_table <- FALSE
     e$audit_map <- list()
 
-    for (cmd in commands) e$e_execute(cmd)
+    for (cmd in commands) {
+      tryCatch(
+        e$e_execute(cmd),
+        error = function(e) {
+          # Native binding errors ("Tau-Argus native error: ...") are
+          # signalled as plain R errors; re-raise them as the typed
+          # TauArgusNativeError condition (0.7.0 contract).
+          cond <- rta_native_error_condition(e)
+          if (is.null(cond)) stop(e)
+          stop(cond)
+        })
+    }
     invisible(e)
   }
 
