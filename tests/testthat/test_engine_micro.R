@@ -28,7 +28,7 @@ cell_at <- function(eng, tab, row_code, col_code) {
   vi1 <- rtauargus.native:::meta_index_of(meta, spec$exp_vars[1L]) + 1L
   vi2 <- rtauargus.native:::meta_index_of(meta, spec$exp_vars[2L]) + 1L
   code_pos <- function(vi, code) {
-    n <- as.integer(tauargusengine::tauargus_get_var_number_of_codes(eng$tau, vi - 1L)[2L])
+    n <- as.integer(tauargusengine::tauargus_get_var_number_of_codes(eng$tau, vi - 1L)$n_active)
     for (i in seq_len(n)) {
       r <- tauargusengine::tauargus_get_var_code(eng$tau, vi - 1L, i - 1L)
       if (isTRUE(r$ok) && trimws(r$code_string) == trimws(code))
@@ -38,14 +38,14 @@ cell_at <- function(eng, tab, row_code, col_code) {
   }
   i1 <- code_pos(vi1, row_code)
   i2 <- code_pos(vi2, col_code)
-  ncol <- as.integer(tauargusengine::tauargus_get_var_number_of_codes(eng$tau, vi2 - 1L)[2L])
+  ncol <- as.integer(tauargusengine::tauargus_get_var_number_of_codes(eng$tau, vi2 - 1L)$n_active)
   (i1 * ncol + i2) + 1L
 }
 
 val_at <- function(eng, tab, r, c)
-  tauargusengine::tauargus_get_table_cell_value(eng$tau, tab, cell_at(eng, tab, r, c) - 1L)
+  tauargusengine::tauargus_get_table_cell_value(eng$tau, tab, cell_at(eng, tab, r, c) - 1L)$value
 st_at <- function(eng, tab, r, c)
-  tauargusengine::tauargus_get_table_cell_status(eng$tau, tab, cell_at(eng, tab, r, c) - 1L)
+  tauargusengine::tauargus_get_table_cell_status(eng$tau, tab, cell_at(eng, tab, r, c) - 1L)$status
 
 micro_batch <- function(extra = NULL) {
   c(
@@ -65,9 +65,9 @@ eng_micro <- run_arb(micro_batch())
 
 test_that("microdata batch computes both tables", {
   # Table 1: Size (5 codes incl. total + missing) x Reg (4) = 20 cells
-  expect_equal(tauargusengine::tauargus_get_total_table_size(eng_micro$tau, 0L)[1L], 20)
+  expect_equal(tauargusengine::tauargus_get_total_table_size(eng_micro$tau, 0L)$n_cells, 20)
   # Table 2: Reg (4) x Ind (7 codes incl. total + missing) = 28 cells
-  expect_equal(tauargusengine::tauargus_get_total_table_size(eng_micro$tau, 1L)[1L], 28)
+  expect_equal(tauargusengine::tauargus_get_total_table_size(eng_micro$tau, 1L)$n_cells, 28)
 
   # Table 1 leaf cells (records: 1A:2x5000 1B:1x4500 2A:2x4500
   #                        2B:1x4500 3A:2x1000 3B:2x5000)
@@ -156,11 +156,11 @@ test_that("file recode merges source codes into the destination code", {
   ncol <- 4L # Total A B X
   lin <- function(row, col) (row - 1L) * ncol + col
   # merged row (row 2) carries all records
-  expect_equal(tauargusengine::tauargus_get_table_cell_value(eng$tau, 0L, lin(2L, 1L) - 1L), 40000)
-  expect_equal(tauargusengine::tauargus_get_table_cell_value(eng$tau, 0L, lin(2L, 2L) - 1L), 21000)
-  expect_equal(tauargusengine::tauargus_get_table_cell_value(eng$tau, 0L, lin(2L, 3L) - 1L), 19000)
+  expect_equal(tauargusengine::tauargus_get_table_cell_value(eng$tau, 0L, lin(2L, 1L) - 1L)$value, 40000)
+  expect_equal(tauargusengine::tauargus_get_table_cell_value(eng$tau, 0L, lin(2L, 2L) - 1L)$value, 21000)
+  expect_equal(tauargusengine::tauargus_get_table_cell_value(eng$tau, 0L, lin(2L, 3L) - 1L)$value, 19000)
   # the destination-code row (row 3) itself is empty
-  expect_equal(tauargusengine::tauargus_get_table_cell_value(eng$tau, 0L, lin(3L, 2L) - 1L), 0)
+  expect_equal(tauargusengine::tauargus_get_table_cell_value(eng$tau, 0L, lin(3L, 2L) - 1L)$value, 0)
 })
 
 test_that("truncation recode keeps only the requested level", {
@@ -171,7 +171,7 @@ test_that("truncation recode keeps only the requested level", {
     as.integer(tauargusengine::tauargus_get_var_number_of_codes(
       eng$tau,
       rtauargus.native:::meta_index_of(eng$metadata, "Ind")
-    )[2L]), 4)
+    )$n_active), 4)
   expect_equal(val_at(eng, 1L, "", "1"), 28000)
   expect_equal(val_at(eng, 1L, "", "2"), 12000)
   expect_equal(val_at(eng, 1L, " A", "1"), 19000)

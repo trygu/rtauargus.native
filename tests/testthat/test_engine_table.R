@@ -33,46 +33,46 @@ eng_table <- run_arb(table_batch())
 lin <- function(row, col) (row - 1L) * 4L + col
 
 test_that("table input batch reads the .tab values", {
-  expect_equal(tauargusengine::tauargus_get_total_table_size(eng_table$tau, 0L)[1L], 16)
+  expect_equal(tauargusengine::tauargus_get_total_table_size(eng_table$tau, 0L)$n_cells, 16)
 
   # leaf cells (comma decimals in the .tab: 10000,00 etc.)
   expect_equal(
-    tauargusengine::tauargus_get_table_cell_value(eng_table$tau, 0L, lin(2L, 2L) - 1L), 10000)
+    tauargusengine::tauargus_get_table_cell_value(eng_table$tau, 0L, lin(2L, 2L) - 1L)$value, 10000)
   expect_equal(
-    tauargusengine::tauargus_get_table_cell_value(eng_table$tau, 0L, lin(2L, 3L) - 1L), 9000)
+    tauargusengine::tauargus_get_table_cell_value(eng_table$tau, 0L, lin(2L, 3L) - 1L)$value, 9000)
   expect_equal(
-    tauargusengine::tauargus_get_table_cell_value(eng_table$tau, 0L, lin(3L, 2L) - 1L), 9000)
+    tauargusengine::tauargus_get_table_cell_value(eng_table$tau, 0L, lin(3L, 2L) - 1L)$value, 9000)
   expect_equal(
-    tauargusengine::tauargus_get_table_cell_value(eng_table$tau, 0L, lin(3L, 3L) - 1L), 10000)
+    tauargusengine::tauargus_get_table_cell_value(eng_table$tau, 0L, lin(3L, 3L) - 1L)$value, 10000)
 
   # totals
   expect_equal(
-    tauargusengine::tauargus_get_table_cell_value(eng_table$tau, 0L, lin(1L, 2L) - 1L), 19000)
+    tauargusengine::tauargus_get_table_cell_value(eng_table$tau, 0L, lin(1L, 2L) - 1L)$value, 19000)
   expect_equal(
-    tauargusengine::tauargus_get_table_cell_value(eng_table$tau, 0L, lin(1L, 3L) - 1L), 19000)
+    tauargusengine::tauargus_get_table_cell_value(eng_table$tau, 0L, lin(1L, 3L) - 1L)$value, 19000)
   expect_equal(
-    tauargusengine::tauargus_get_table_cell_value(eng_table$tau, 0L, lin(2L, 1L) - 1L), 19000)
+    tauargusengine::tauargus_get_table_cell_value(eng_table$tau, 0L, lin(2L, 1L) - 1L)$value, 19000)
   expect_equal(
-    tauargusengine::tauargus_get_table_cell_value(eng_table$tau, 0L, lin(3L, 1L) - 1L), 19000)
+    tauargusengine::tauargus_get_table_cell_value(eng_table$tau, 0L, lin(3L, 1L) - 1L)$value, 19000)
   expect_equal(
-    tauargusengine::tauargus_get_table_cell_value(eng_table$tau, 0L, lin(1L, 1L) - 1L), 38000)
+    tauargusengine::tauargus_get_table_cell_value(eng_table$tau, 0L, lin(1L, 1L) - 1L)$value, 38000)
 
   # missing-code row and column are empty
   expect_equal(
-    tauargusengine::tauargus_get_table_cell_status(eng_table$tau, 0L, lin(4L, 2L) - 1L),
+    tauargusengine::tauargus_get_table_cell_status(eng_table$tau, 0L, lin(4L, 2L) - 1L)$status,
     rtauargus.native:::CS_EMPTY)
   expect_equal(
-    tauargusengine::tauargus_get_table_cell_status(eng_table$tau, 0L, lin(2L, 4L) - 1L),
+    tauargusengine::tauargus_get_table_cell_status(eng_table$tau, 0L, lin(2L, 4L) - 1L)$status,
     rtauargus.native:::CS_EMPTY)
 })
 
 test_that("READTABLE 1T keeps the file statuses as safe-manual", {
   # every cell in tab.tab carries the status character "S"
   expect_equal(
-    tauargusengine::tauargus_get_table_cell_status(eng_table$tau, 0L, lin(1L, 1L) - 1L),
+    tauargusengine::tauargus_get_table_cell_status(eng_table$tau, 0L, lin(1L, 1L) - 1L)$status,
     rtauargus.native:::CS_SAFE_MANUAL)
   expect_equal(
-    tauargusengine::tauargus_get_table_cell_status(eng_table$tau, 0L, lin(2L, 2L) - 1L),
+    tauargusengine::tauargus_get_table_cell_status(eng_table$tau, 0L, lin(2L, 2L) - 1L)$status,
     rtauargus.native:::CS_SAFE_MANUAL)
 })
 
@@ -127,11 +127,11 @@ test_that("APRIORI applies hst status changes to table cells", {
   ))
   # (A, A) = row 2, col 2 is forced primary-unsafe by the hst file
   expect_equal(
-    tauargusengine::tauargus_get_table_cell_status(eng$tau, 0L, lin(2L, 2L) - 1L),
+    tauargusengine::tauargus_get_table_cell_status(eng$tau, 0L, lin(2L, 2L) - 1L)$status,
     rtauargus.native:::CS_UNSAFE_MANUAL)
   # an unlisted cell stays safe-manual
   expect_equal(
-    tauargusengine::tauargus_get_table_cell_status(eng$tau, 0L, lin(2L, 3L) - 1L),
+    tauargusengine::tauargus_get_table_cell_status(eng$tau, 0L, lin(2L, 3L) - 1L)$status,
     rtauargus.native:::CS_SAFE_MANUAL)
 })
 
