@@ -710,11 +710,17 @@ new_engine <- function() {
       stop_batch("PrepareHITAS failed")
     # On failure the binding raises ("AHiTaS failed (code N: ...)");
     # the batch dispatch translates it to TauArgusNativeError.
+    # The solver writes its scratch files (CSPlogfile.txt, cspSCIP.*,
+    # HiTaS.log, ...) into the out dir. Pass this call's temp dir so
+    # nothing lands in the user's working directory (legacy tau-ARGUS
+    # passed the OS temp dir, OptiSuppress.java). The C layer
+    # concatenates dir and name, so the trailing separator is required.
     hitas_a_hitas(
       e$hitas,
       pars_file = param_file,
       files_file = files_file,
       max_time = cmd$mod_max_time,
+      tau_out_dir = paste0(tmp, .Platform$file.sep),
       single_with_single = cmd$mod_singleton,
       single_with_more = cmd$mod_singleton_multi,
       do_count_bounds = cmd$mod_min_freq
@@ -738,8 +744,13 @@ new_engine <- function() {
       stop_batch("WriteJJFormat failed for OPT")
     # On failure the binding raises ("FullJJ failed (code N: ...)");
     # the batch dispatch translates it to TauArgusNativeError.
+    # The solver writes its scratch files (CSPlogfile.txt, cspSCIP.*,
+    # FullJJ.log, ...) into the out dir. Pass this call's temp dir so
+    # nothing lands in the user's working directory. The C layer
+    # concatenates dir and name, so the trailing separator is required.
     hitas_full_jj(e$hitas, in_file_jj = jj_in, out_file = jj_out,
-                  max_time = cmd$opt_max_time)
+                  max_time = cmd$opt_max_time,
+                  out_dir = paste0(tmp, .Platform$file.sep))
     # Append " m" to every line of JJ.OUT (secondary-marker form) -> JJ2.OUT
     lines <- readLines(jj_out, warn = FALSE, encoding = "UTF-8")
     writeLines(c("fop", "fop", paste0(lines, " m")), jj2)
