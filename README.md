@@ -78,8 +78,8 @@ install.packages(c("purrr", "dplyr", "tidyr", "data.table", "gdata",
                    "igraph", "lifecycle"))
 ```
 
-The URLs below select release `r-v0.6.6`, whose R package carries
-version `1.3.6-0.6.6`. For another release, take the asset names from
+The URLs below select release `r-v0.8.1`, whose R package carries
+version `1.3.6-0.8.1`. For another release, take the asset names from
 its release page. The release tag and the R package version are separate
 identifiers. On a clean machine, install the R dependencies (the code
 block above) before any of these URLs; the binary install does not fetch
@@ -89,7 +89,7 @@ Windows:
 
 ``` r
 install.packages(
-  "https://github.com/trygu/rtauargus.native/releases/download/r-v0.6.6/rtauargus.native_1.3.6-0.6.6.zip",
+  "https://github.com/trygu/rtauargus.native/releases/download/r-v0.8.1/rtauargus.native_1.3.6-0.8.1.zip",
   repos = NULL, type = "binary")
 library(rtauargus.native)
 ```
@@ -103,7 +103,7 @@ macOS (Apple silicon; the release targets arm64):
 
 ``` r
 install.packages(
-  "https://github.com/trygu/rtauargus.native/releases/download/r-v0.6.6/rtauargus.native_1.3.6-0.6.6_r4.5.3_macos-arm64.tar.gz",
+  "https://github.com/trygu/rtauargus.native/releases/download/r-v0.8.1/rtauargus.native_1.3.6-0.8.1_r4.5.3_macos-arm64.tar.gz",
   repos = NULL, type = "binary")
 library(rtauargus.native)
 ```
@@ -112,7 +112,7 @@ Linux:
 
 ``` r
 install.packages(
-  "https://github.com/trygu/rtauargus.native/releases/download/r-v0.6.6/rtauargus.native_1.3.6-0.6.6_r4.5.3_linux-x86_64.tar.gz",
+  "https://github.com/trygu/rtauargus.native/releases/download/r-v0.8.1/rtauargus.native_1.3.6-0.8.1_r4.5.3_linux-x86_64.tar.gz",
   repos = NULL)
 library(rtauargus.native)
 ```
@@ -126,7 +126,7 @@ at install time):
 
 ``` r
 install.packages(
-  "https://github.com/trygu/rtauargus.native/releases/download/r-v0.6.6/rtauargus.native_1.3.6-0.6.6.tar.gz",
+  "https://github.com/trygu/rtauargus.native/releases/download/r-v0.8.1/rtauargus.native_1.3.6-0.8.1.tar.gz",
   repos = NULL)
 library(rtauargus.native)
 ```
