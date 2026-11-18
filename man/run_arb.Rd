@@ -81,7 +81,7 @@ for backward compatibility and are no longer used.
 Checks are made before the actual launching of the engine:
 existence of the asc and rda files, of the folders where
 write the results, the variables to be used (crossings, response variable) in the
-response variable) in the metadata (rda file). \cr
+metadata (rda file). \cr
 
 (Seul l’argument \code{arb_filename} est obligatoire, car toutes les
 informations nécessaires sont présentes dans ce fichier.
